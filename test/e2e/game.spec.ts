@@ -122,3 +122,26 @@ test('private assurances have a cash payoff during the delivery round', async ({
   await expect(page.getByText('AGREED', { exact: true })).toBeVisible();
   await expect(page.locator('main')).toContainText('₺0');
 });
+
+// The same policy is driven from DOM text here; it gets no state or export.
+for (const approach of ['ask-first', 'repair-refusal'] as const) {
+  test(`screen-only policy wins in the browser: ${approach}`, async ({ page }) => {
+    const { coldPolicy } = await import('../support/cold-policy');
+    const decide = coldPolicy(approach);
+    await takeSeat(page);
+    for (let step = 0; step < 80; step++) {
+      if (await page.getByText('AGREED', { exact: true }).count()) break;
+      const text = (await page.locator('main').textContent()) ?? '';
+      const choices = await page.locator('[data-choice]').evaluateAll((nodes) =>
+        nodes.map((node) => ({
+          id: (node as HTMLElement).dataset.choice ?? '',
+          text: node.textContent ?? '',
+        })),
+      );
+      const id = decide({ text, choices });
+      await page.locator(`[data-choice="${id}"]`).click();
+    }
+    await expect(page.getByText('AGREED', { exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}

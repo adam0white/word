@@ -22,6 +22,10 @@ Apply Claude's five fixes in their ranked order: useful asks and conditional con
 
 The new bargaining and delivery-round timing are host-authored rules. They do not add framework psychology. Consent is never a random persuasion roll. Source trust and relationships remain separate HF stores. The month-later scene reads the store that the preceding events actually changed.
 
+## Iteration 3 discoverability correction
+
+Smaller service and trial lease offers are visible from the first agreement menu. The late service still requires the clothing-order letter. Ferda’s refusal points to those offers and tells the player to ask Osman about rent. Osman must explicitly offer the trial lease in conversation before it can receive his signature. Each agreement records the concessions already discussed; after a new conversation the player must write a new agreement and collect every signature again. The agreement menu and Osman’s refusal explain that step. A screen-only cold policy tests asking first and recovering after the full-shop refusal. It receives displayed prose, choice labels and its own choice history, without actor or agreement state. Both approaches must win across 32 seeds and replay exactly, with the same policy also driven from browser text. It is a scripted discoverability check, not evidence that every human will discover the solution. Content edition `word-3` rejects older replay inputs because the visible choice list has changed.
+
 ## Technology and boundaries
 
 Ink through inkjs authors framing and one set of choices at a time. Strict TypeScript holds the host state and the published HF 3.2.0 actors. No React, panels, canvas, server or database. Ink external functions only read cached host projections. Input handlers apply each command once, outside Ink evaluation. Ink never calls converse, perceive, contradicted or a host reducer. Replay reconstructs the initial actors from a seed and replays the input log, including Ink choice paths. Export pins content edition, HF pin, cast data, complete state and final hash. No Ink randomness is used.

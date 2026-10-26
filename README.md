@@ -61,7 +61,7 @@ general autonomous simulation. It starts fresh people, with no imported saves.
 **Export playtest** downloads the seed, input log, complete state, edition and
 HF pin. Open `?lab=1`, then **Menu → Lab tools → Import a playtest export** to
 reconstruct a run and check its state and hash. **Resume replay** returns to play.
-Only the current `word-2` edition with HF 3.2.0 is accepted.
+Only the current `word-3` edition with HF 3.2.0 is accepted.
 
 The client is pinned to **@adam0white/lab-client 0.4.11**, the vendored artifact
 `vendor/adam0white-lab-client-0.4.11.tgz` (SHA-256
@@ -103,3 +103,11 @@ Commit and push. Wait for green GitHub CI on the exact commit. From a clean tree
 run `pnpm build`, then `npx wrangler deploy`. Verify the play URL and
 `/release.json`; the release must name that commit and show `dirty: false`.
 Code is MIT licensed. See [docs/design.md](docs/design.md) for scope and design.
+
+
+The cold policy in `test/support/cold-policy.ts` reads only the displayed text,
+choice labels and its own prior choices. It cannot read the seed, actor state,
+agreement fields or exported run. It tries asking before offering and recovering
+from a full-shop refusal. Both approaches are checked over 32 seeds with exact
+replay, then driven through DOM text in all four browser/viewport projects.
+This is a scripted discoverability check; it does not replace a human playtest.

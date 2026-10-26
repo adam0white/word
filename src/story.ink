@@ -51,17 +51,18 @@ A conversation takes two minutes. You can ask again after something changes.
 
 === offer ===
 Writing an agreement takes two minutes. Each signature takes one more minute.
+For a trial lease, ask Osman about rent before writing the agreement. After a conversation changes the terms, write a new agreement for everyone to sign.
 {flag("caught"):They require a ₺40 deposit after your conflicting accounts.}
 * [Morning work. Rent an outside cart space. Full shop lease. (2 minutes)]
   @morning
   -> END
-* {flag("ferda") && flag("osman")} [Morning work. Smaller service and trial lease.{flag("riza"): Use Rıza’s yard.| Rent outside storage.} (2 minutes)]
+* [Morning work. Smaller service and trial lease.{flag("riza"): Use Rıza’s yard.| Rent outside storage.} (2 minutes)]
   @morning_small
   -> END
 * {flag("letter")} [Late work. Use the clothing order. Full shop lease. (2 minutes)]
   @late
   -> END
-* {flag("letter") && flag("ferda") && flag("osman")} [Use the clothing order for a smaller late service and trial lease. (2 minutes)]
+* {flag("letter")} [Use the clothing order for a smaller late service and trial lease. (2 minutes)]
   @late_small
   -> END
 * {not flag("letter")} [Suggest late work without the letter. (2 minutes)]
@@ -70,7 +71,7 @@ Writing an agreement takes two minutes. Each signature takes one more minute.
 * [Small repairs and cart inside, in marked spaces. Full shop lease. Ask both men to waive their guarantees. (2 minutes)]
   @shared
   -> END
-* {flag("ferda") && flag("osman")} [Small repairs and cart inside. Smaller service and trial lease. Ask both men to waive their guarantees. (2 minutes)]
+* [Small repairs and cart inside. Smaller service and trial lease. Ask both men to waive their guarantees. (2 minutes)]
   @shared_small
   -> END
 * [Return to the table. (0 minutes)]

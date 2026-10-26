@@ -36,6 +36,43 @@ describe('iteration two bargaining', () => {
     expect(s.proposal?.consents).not.toContain('ferda');
     expect(s.note).toContain('smaller');
   });
+  it('offers Ferda a smaller agreement after her full-lease refusal without a hidden rent conversation', () => {
+    const s = start();
+    choose(s, 'Write an agreement');
+    choose(s, 'Rent an outside');
+    sign(s);
+    expect(s.note).toContain('Ferda refuses');
+    choose(s, 'Hear what');
+    choose(s, 'Ask Ferda');
+    choose(s, 'Fetch Nuri');
+    choose(s, 'Write an agreement');
+    const offers = view(s).choices.map((c) => c.text);
+    expect(offers.some((text) => text.includes('Morning work. Smaller'))).toBe(true);
+    expect(offers.some((text) => text.includes('smaller late service'))).toBe(true);
+    expect(offers.some((text) => text.includes('cart inside. Smaller'))).toBe(true);
+    expect(s.asked).not.toContain('osman');
+  });
+  it('requires Osman to agree to a visible trial offer and explains how to rewrite it', () => {
+    const s = start();
+    choose(s, 'Write an agreement');
+    choose(s, 'Morning work. Smaller');
+    choose(s, 'next person');
+    choose(s, 'next person');
+    choose(s, 'next person');
+    expect(s.proposal?.consents).toEqual(['halil', 'riza']);
+    expect(s.note).toContain('Osman refuses');
+    expect(s.note).toContain('Ask him about rent');
+    expect(s.note).toContain('new agreement');
+    choose(s, 'Hear what');
+    choose(s, 'Ask Osman');
+    choose(s, 'Write an agreement');
+    choose(s, 'Morning work. Smaller');
+    expect(s.proposal?.consents).toEqual([]);
+    sign(s);
+    expect(s.result).toBe('win');
+    expect(s.spent).toBe(100);
+    expect(replayRun(exportRun(s))).toEqual(s);
+  });
   it('lets all four conversations and the letter produce an affordable agreement in time', () => {
     const s = start();
     askAll(s);

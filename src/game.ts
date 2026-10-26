@@ -19,7 +19,7 @@ import {
 import { Story } from 'inkjs';
 import content from './story.json';
 
-const EDITION = 'word-2';
+const EDITION = 'word-3';
 const HF = '3.2.0';
 const PROP = 'floor-reserved-for-morning-repairs';
 const ORDER = ['halil', 'riza', 'osman', 'ferda'] as const;
@@ -434,9 +434,9 @@ function refusal(p: Proposal, who: Who): string | null {
   if (who === 'riza' && p.kind === 'late' && !p.concessions.includes('riza'))
     return 'Rıza refuses: he can take the cart home at four, but that must be written down. Ask him.';
   if (who === 'osman' && p.smaller && !p.concessions.includes('osman'))
-    return 'Osman refuses: a trial lease needs his agreement. Ask him about rent.';
+    return 'Osman refuses: a trial lease needs his agreement. Ask him about rent, then write a new agreement with the trial lease.';
   if (who === 'ferda' && !p.smaller)
-    return 'Ferda refuses: she needs a smaller service and a trial lease. Ask her what she would choose.';
+    return 'Ferda refuses: she needs a smaller service and a trial lease. Choose a smaller service when you change the agreement. Ask Osman about rent before writing the trial lease.';
   return null;
 }
 
