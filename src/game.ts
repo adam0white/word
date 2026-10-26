@@ -218,7 +218,7 @@ export function view(s: GameState): {
     title: titles[s.page],
     prose: [s.note, ...prose].filter(Boolean),
     ...(s.speaker ? { speaker: s.speaker, speech: s.speech } : {}),
-    choices: story.currentChoices.map((c) => ({ id: String(c.index), text: c.text })),
+    choices: story.currentChoices.map((c) => ({ id: `${s.inputs.length}.${c.index}`, text: c.text })),
   };
 }
 
@@ -354,10 +354,11 @@ function propose(s: GameState, kind: 'morning' | 'late' | 'shared') {
 }
 
 export function act(s: GameState, input: Input): void {
+  if (input && s.inputs.some((prior) => prior.choice === input.choice)) return;
   if (s.result !== 'playing') throw new Error('This meeting has ended. Start a new game.');
   if (!input || typeof input.choice !== 'string') throw new Error('Choose an available action.');
   const { story } = ink(s);
-  const choice = story.currentChoices.find((c) => String(c.index) === input.choice);
+  const choice = story.currentChoices.find((c) => `${s.inputs.length}.${c.index}` === input.choice);
   if (!choice) throw new Error('Choose an available action.');
   story.ChooseChoiceIndex(choice.index);
   let command = '';
@@ -454,7 +455,13 @@ export function act(s: GameState, input: Input): void {
     const who = ORDER[p.consents.length];
     if (!who) return;
     p.consents.push(who);
-    s.note = `${s.people[who].name} signs proposal ${p.id}. ${p.terms}`;
+    const reasons: Record<Who, string> = {
+      halil: 'The agreed shift gives him paid work on a clear floor.',
+      riza: 'The cart has a place for the hours he needs.',
+      osman: 'The first month of the new rent is funded.',
+      ferda: 'The work can pay. She chooses to take the new lease.',
+    };
+    s.note = `${s.people[who].name} signs proposal ${p.id}. ${reasons[who]}`;
     record(s, s.note);
     s.page = 'signing';
     if (p.consents.length === ORDER.length) {

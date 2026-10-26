@@ -91,6 +91,17 @@ describe('complete negotiation', () => {
     expect(view(s)).toEqual(view(s));
     expect(hashState(s)).toBe(before);
   });
+  it('a duplicate signature input is a no-op on the exact proposal', () => {
+    const s = start();
+    choose(s, 'Write a proposal');
+    choose(s, 'Rent an outside');
+    const input = { choice: view(s).choices[0]?.id ?? '' };
+    act(s, input);
+    const signed = hashState(s);
+    act(s, input);
+    expect(hashState(s)).toBe(signed);
+    expect(s.proposal?.consents).toEqual(['halil']);
+  });
   it('keeps a long valid navigation log replayable', () => {
     const s = start();
     for (let i = 0; i < 101; i++) {
