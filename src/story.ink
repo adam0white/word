@@ -5,98 +5,116 @@ EXTERNAL flag(key)
 
 === opening ===
 Your uncle Nuri died last week. His shop is shut. Four people have come to decide whether it opens again.
-He promised Halil morning repair work. He promised Rıza space for a delivery cart on the same floor. Both heard him clearly. Neither can speak for him now.
-Ferda will take a new lease only if the work can pay. Osman owns the room. He leaves in twenty-four minutes to meet another tenant.
-Nuri left a letter at the depot. Fetching it takes six minutes. Ferda says it concerns a clothing order, not who owns anything.
-You have ₺100 set aside for your journey home. You can spend it to make an agreement work.
-* [Put the notebook on the table.]
+He promised Halil morning repair work. He promised Rıza space for a delivery cart on the same floor. Both heard him clearly.
+Osman owns the room. He leaves in twenty-four minutes to meet another tenant. Ferda has not decided whether to take the lease.
+Nuri left a letter about a clothing order at the depot. Fetching it takes six minutes.
+You have ₺100 for your journey home. You can spend it to make an agreement work.
+* [Put the notebook on the table. (0 minutes)]
   @start
   -> END
 
 === table ===
-Agree on work hours, cart storage and rent. Everyone must sign the same terms.
-* [Hear what someone needs.]
+Everyone must sign one agreement on work, storage and rent. Ask what they need and what they can change.
+* [Hear what someone needs. (0 minutes)]
   @hear
   -> END
-* {not flag("letter")} [Fetch Nuri's letter. Lose six minutes.]
+* {not flag("letter")} [Fetch Nuri's letter. (6 minutes)]
   @letter
   -> END
-* [Write a proposal.]
+* [Write an agreement.{flag("halil_left"): Call Halil back. (2 minutes)| (0 minutes)}]
   @offer
   -> END
-* {not flag("caught")} [Speak to someone in private.]
+* {not flag("caught")} [Speak to someone in private. (0 minutes)]
   @private
   -> END
-* [Let Osman leave. End the meeting.]
+* [Let Osman leave. End the meeting. (0 minutes)]
   @leave
   -> END
 
 === hear ===
-Each conversation takes three minutes. A refusal tells you what must change.
-* {not flag("halil")} [Ask Halil about the work.]
+A conversation takes two minutes. You can ask again after something changes.
+* {not flag("halil_left")} [Ask Halil about the work. (2 minutes)]
   @ask_halil
   -> END
-* {not flag("riza")} [Ask Rıza about the cart.]
+* {not flag("away")} [Ask Rıza about the cart. (2 minutes)]
   @ask_riza
   -> END
-* {not flag("osman")} [Ask Osman about rent.]
+* [Ask Osman about rent. (2 minutes)]
   @ask_osman
   -> END
-* {not flag("ferda")} [Ask Ferda about opening.]
+* [Ask Ferda about opening. (2 minutes)]
   @ask_ferda
   -> END
-* [Return to the table.]
+* [Return to the table. (0 minutes)]
   @back
   -> END
 
 === offer ===
-These are future arrangements between the people here. Nuri's words cannot make anyone accept them.
-{flag("caught"):After your conflicting statements, they also require a ₺40 deposit paid today.}
-* [Morning work. Rent an outside cart space. You cover ₺100.]
+Writing an agreement takes two minutes. Each signature takes one more minute.
+{flag("caught"):They require a ₺40 deposit after your conflicting accounts.}
+* [Morning work. Rent an outside cart space. Full shop lease. (2 minutes)]
   @morning
   -> END
-* {flag("letter")} [Late work after the cart leaves. Use the clothing order. You cover ₺40.]
+* {flag("ferda") && flag("osman")} [Morning work. Smaller service and trial lease.{flag("riza"): Use Rıza’s yard.| Rent outside storage.} (2 minutes)]
+  @morning_small
+  -> END
+* {flag("letter")} [Late work. Use the clothing order. Full shop lease. (2 minutes)]
   @late
   -> END
-* {not flag("letter")} [Suggest late work without the letter.]
+* {flag("letter") && flag("ferda") && flag("osman")} [Use the clothing order for a smaller late service and trial lease. (2 minutes)]
+  @late_small
+  -> END
+* {not flag("letter")} [Suggest late work without the letter. (2 minutes)]
   @late_unproved
   -> END
-* [Morning work with the cart inside. You pay nothing.]
+* [Small repairs and cart inside, in marked spaces. Full shop lease. Ask both men to waive their guarantees. (2 minutes)]
   @shared
   -> END
-* [Return to the table.]
+* {flag("ferda") && flag("osman")} [Small repairs and cart inside. Smaller service and trial lease. Ask both men to waive their guarantees. (2 minutes)]
+  @shared_small
+  -> END
+* [Return to the table. (0 minutes)]
   @back
   -> END
 
 === private ===
-Halil and Rıza will compare your words before they sign. A cheap agreement based on two different accounts may fall apart there.
-* {not flag("told_halil")} [Tell Halil: “The floor is reserved for morning work. Everyone agreed.” This is false.]
+A private promise may persuade someone to waive a ₺40 guarantee for sharing the floor.
+* {not flag("told_halil")} [Tell Halil: “The floor is reserved for morning work. Everyone agreed.” (2 minutes)]
   @tell_halil
   -> END
-* {not flag("told_riza")} [Tell Rıza: “The floor is not reserved for morning work. Everyone agreed.” This is false.]
+* {not flag("told_riza") && not flag("away")} [Tell Rıza: “The floor is not reserved for morning work. Everyone agreed.” (2 minutes)]
   @tell_riza
   -> END
-* {flag("told_halil") || flag("told_riza")} [Withdraw my private assurances in front of everyone. Pay a ₺40 deposit on any agreement.]
+* {flag("told_halil") || flag("told_riza")} [Withdraw your private promises in front of everyone. Add a ₺40 deposit. (2 minutes)]
   @disclose
   -> END
-* [Return to the table.]
+* [Return to the table. (0 minutes)]
   @back
   -> END
 
 === signing ===
-The terms stay on the table. A new proposal cancels every signature.
-* [Ask the next person to sign. Takes one minute.]
+The agreement stays on the table. Each person reads the same marked spaces, hours and price. Changing it cancels every signature.
+* {not flag("waiting")} [Ask the next person to sign. (1 minute)]
   @sign
   -> END
-* [Change the proposal. Clear every signature.]
+* {flag("waiting")} [Wait for Rıza to return. ({remaining() - 10} {remaining() == 11:minute|minutes})]
+  @wait
+  -> END
+* {flag("can_leave")} [Let Halil return to his workshop with his signed agreement. (0 minutes)]
+  @release_halil
+  -> END
+* [Hear what someone needs. (0 minutes)]
+  @hear
+  -> END
+* [Change the agreement. Clear every signature.{flag("halil_left"): Call Halil back. (2 minutes)| (0 minutes)}]
   @offer
   -> END
-* [End the meeting without agreement.]
+* [End the meeting without agreement. (0 minutes)]
   @leave
   -> END
 
 === ending ===
 One month later.
-* [Close the notebook.]
+* [Close the notebook. (0 minutes)]
   @close
   -> END

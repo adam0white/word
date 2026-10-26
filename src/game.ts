@@ -10,14 +10,16 @@ import {
   createPerson,
   type Person,
   perceive,
+  relationshipWith,
   seedBelief,
   seedSourceTrust,
+  socialEvent,
   trustOf,
 } from '@adam0white/human-framework';
 import { Story } from 'inkjs';
 import content from './story.json';
 
-const EDITION = 'word-1';
+const EDITION = 'word-2';
 const HF = '3.2.0';
 const PROP = 'floor-reserved-for-morning-repairs';
 const ORDER = ['halil', 'riza', 'osman', 'ferda'] as const;
@@ -30,6 +32,8 @@ export type Proposal = {
   cost: number;
   terms: string;
   consents: Who[];
+  smaller: boolean;
+  concessions: Who[];
 };
 export type GameState = {
   edition: typeof EDITION;
@@ -45,6 +49,7 @@ export type GameState = {
   letter: boolean;
   told: Partial<Record<'halil' | 'riza', boolean>>;
   caught: boolean;
+  halilLeft: boolean;
   spent: number;
   proposal: Proposal | null;
   nextProposal: number;
@@ -143,6 +148,7 @@ export function createGame(seed: number): GameState {
     letter: false,
     told: {},
     caught: false,
+    halilLeft: false,
     spent: 0,
     proposal: null,
     nextProposal: 1,
@@ -153,6 +159,17 @@ export function createGame(seed: number): GameState {
 }
 
 function flag(s: GameState, key: string): boolean {
+  if (key === 'halil_left') return s.halilLeft;
+  if (key === 'can_leave') return !!s.proposal?.consents.includes('halil') && !s.halilLeft;
+  if (key === 'waiting')
+    return (
+      !!s.proposal &&
+      s.proposal.consents.length === 3 &&
+      !s.proposal.consents.includes('riza') &&
+      s.remaining <= 19 &&
+      s.remaining > 10
+    );
+  if (key === 'away') return away(s);
   if (key === 'letter') return s.letter;
   if (key === 'caught') return s.caught;
   if (key === 'told_halil') return s.told.halil !== undefined;
@@ -174,6 +191,29 @@ function ink(s: GameState) {
   return { story, prose };
 }
 
+function relationshipEnding(s: GameState): string[] {
+  const wary: string[] = [];
+  const warm: string[] = [];
+  for (const who of ORDER) {
+    const actor = s.people[who];
+    const tie = relationshipWith(actor, 'nephew');
+    if (trustOf(actor, 'nephew') < 0.7 || tie.trust < 0.45) wary.push(actor.name);
+    else if (tie.familiarity > 0) warm.push(actor.name);
+  }
+  return [
+    ...(warm.length
+      ? [
+          `${warm.join(', ')} ${warm.length === 1 ? 'greets' : 'greet'} you and ${warm.length === 1 ? 'asks' : 'ask'} you to sit.`,
+        ]
+      : []),
+    ...(wary.length
+      ? [
+          `${wary.join(', ')} ${wary.length === 1 ? 'checks' : 'check'} every detail with you. Any future agreement must be in writing.`,
+        ]
+      : []),
+  ];
+}
+
 export function view(s: GameState): {
   title: string;
   prose: string[];
@@ -191,12 +231,19 @@ export function view(s: GameState): {
             `The shop is open. ${terms}`,
             `Ferda paid the agreed rent. Halil completed the ${s.proposal?.kind === 'late' ? 'late' : 'morning'} shifts. Rıza kept the agreed storage hours.`,
             `Your contribution was ₺${s.spent}. ${s.spent === 100 ? 'You took the overnight coach home instead of your train.' : 'You kept enough for the train home.'}`,
-            'Nobody has proved what Nuri meant. The agreement holds because they chose these terms.',
+            ...relationshipEnding(s),
+            s.proposal?.kind === 'late' &&
+            s.people.ferda.memory.beliefs.some(
+              (b) => b.prop === 'order.supports-late-service' && b.logOdds > 0,
+            )
+              ? 'Ferda calls the smaller late service her own choice.'
+              : 'Ferda chooses to keep the service small.',
           ]
         : [
             'Osman rented the room to someone else. Ferda returned the keys.',
             'Halil went back to his own rented workshop. The extra job did not begin. Rıza still brings his cart home each day.',
-            'No one signed terms they could not keep. You can try the meeting again.',
+            'No one signed an agreement they could not keep. You can try the meeting again.',
+            ...relationshipEnding(s),
           ];
     return {
       title: s.result === 'win' ? 'They kept their word.' : 'The shop stayed shut.',
@@ -209,26 +256,55 @@ export function view(s: GameState): {
     opening: 'His Word',
     table: 'At the cutting table',
     hear: 'What they need',
-    offer: 'One set of terms',
+    offer: 'One agreement',
     private: 'Your word',
     signing: 'Read it together',
     ending: 'One month later',
   };
+  const deliveryWait =
+    !!s.proposal &&
+    !s.proposal.consents.includes('riza') &&
+    s.remaining > 10 &&
+    s.remaining - (s.proposal.consents.includes('halil') ? 0 : 1) - 1 <= 18;
+  const signingMinutes = s.proposal
+    ? Math.max(4 - s.proposal.consents.length, deliveryWait ? s.remaining - 10 + 1 : 0)
+    : 0;
   return {
     title: titles[s.page],
-    prose: [s.note, ...prose].filter(Boolean),
+    prose: [
+      ...(s.page === 'signing' && s.proposal
+        ? [
+            `${signingMinutes} ${signingMinutes === 1 ? 'minute' : 'minutes'} needed for the remaining signatures${deliveryWait ? ' including the delivery wait' : ''}. ${s.remaining} ${s.remaining === 1 ? 'minute remains' : 'minutes remain'}.`,
+          ]
+        : []),
+      s.note,
+      ...(s.page === 'signing' && s.proposal && !s.note.includes(s.proposal.terms)
+        ? [`${s.proposal.terms} Total from your fund: ₺${s.proposal.cost}.`]
+        : []),
+      ...prose,
+      s.halilLeft
+        ? 'Halil has left with his signed copy. Rıza cannot compare accounts with him here.'
+        : away(s)
+          ? 'Rıza is on his delivery round. He returns with 10 minutes left. Halil is here.'
+          : s.remaining <= 10
+            ? 'Rıza has returned from his delivery round. Halil and Rıza are both at the table.'
+            : 'Halil and Rıza are both at the table. Rıza leaves on his delivery round with 18 minutes left and returns with 10.',
+    ].filter(Boolean),
     ...(s.speaker ? { speaker: s.speaker, speech: s.speech } : {}),
     choices: story.currentChoices.map((c) => ({ id: `${s.inputs.length}.${c.index}`, text: c.text })),
   };
 }
 
+function away(s: GameState) {
+  return s.remaining <= 18 && s.remaining > 10;
+}
 function record(s: GameState, text: string) {
   s.log.push({ at: 24 - s.remaining, text });
 }
-function spendTime(s: GameState, minutes: number) {
+function spendTime(s: GameState, minutes: number, finalSignature = false) {
   s.remaining = Math.max(0, s.remaining - minutes);
   for (const p of Object.values(s.people)) p.now = 24 - s.remaining;
-  if (s.remaining === 0) {
+  if (s.remaining === 0 && minutes > 0 && !finalSignature) {
     s.result = 'loss';
     s.page = 'ending';
     s.note = 'The appointment time came before the last signature. Osman left.';
@@ -237,46 +313,47 @@ function spendTime(s: GameState, minutes: number) {
 }
 const needs: Record<Who, string> = {
   halil:
-    'Halil needs a clear floor and paid work. He still rents his own workshop from Osman; this is an extra job. He can work late if there is a steady order.',
-  riza: 'Rıza needs cart space until four. He can take it home then. Outside space is available for ₺40, but he cannot pay for it.',
+    '“I need paid work on a clear floor. I can work late if the order includes a paid break. Put that in the agreement.”',
+  riza: '“I need storage until four. I can take the cart home then. For morning work I can lend my yard instead of renting outside space.”',
   osman:
-    'Osman needs the new rent covered. He will accept Ferda as tenant if the first month is funded. Halil’s existing rent account stays separate.',
+    '“I need the first month funded. I can offer a one-month trial instead of a full lease, if Ferda chooses it.”',
   ferda:
-    'Ferda needs a viable opening month. Morning work leaves a ₺60 rent gap. The clothing order may pay that gap, but its collection hours are in the letter at the depot.',
-};
-const phrases: Record<string, string> = {
-  'nuri.promised-morning-work':
-    'Nuri told me I could do the repairs every morning. I came because I believed him.',
-  'nuri.promised-day-storage':
-    'Nuri told me the cart could stay on that floor all day. I cannot unload it in the street.',
-  'lease.needs-rent': 'I own this room. I can offer a new lease, but I need the rent covered.',
-  'order.supports-late-service': 'I have not seen a confirmed order that will pay for late work.',
+    '“I cannot run the whole shop. I would choose a smaller service on a trial lease. The letter may tell us whether late work pays.”',
 };
 function talk(s: GameState, who: Who) {
   const actor = s.people[who];
   const result = converse(actor, s.people.nephew, {
     at: actor.now,
-    maxClaims: 1,
+    maxClaims: 4,
     provenance: true,
     phrase: (claim, fallback) => {
       if (!('value' in claim)) return fallback;
-      if (claim.prop === 'order.supports-late-service' && claim.value)
-        return 'The order pays for late work. I can take the lease if we cover the first collection.';
-      return phrases[claim.prop] ?? fallback;
+      if (claim.prop === PROP)
+        return claim.value
+          ? 'You told me the floor was reserved for morning repairs.'
+          : 'You told me the floor was not reserved for morning repairs.';
+      if (claim.prop === 'order.supports-late-service')
+        return claim.value
+          ? 'The order pays for late work. I can choose the smaller service.'
+          : 'I have not seen an order that pays for late work.';
+      if (claim.prop === 'nuri.promised-morning-work') return 'Nuri promised me morning repairs.';
+      if (claim.prop === 'nuri.promised-day-storage') return 'Nuri promised me cart storage.';
+      if (claim.prop === 'lease.needs-rent') return 'The first month must be paid.';
+      return fallback;
     },
   });
   perceive(s.people.nephew, result.told);
+  socialEvent(actor, { at: actor.now, kind: 'chat', otherId: 'nephew', byMe: false, magnitude: 0.4 });
   s.speaker = actor.name;
   s.speech = result.told.map((p) => p.summary).join(' ');
-  s.note =
-    who === 'ferda' && s.letter
-      ? 'Ferda has read the letter. The paid clothing order covers late work and rent. She needs ₺40 for the first collection.'
-      : needs[who];
-  s.asked.push(who);
+  const wary = trustOf(actor, 'nephew') < 0.7 || relationshipWith(actor, 'nephew').trust < 0.45;
+  s.note = `${needs[who]}${wary ? ' “This time I will rely on what is written, not your word.”' : ''}`;
+  if (!s.asked.includes(who)) s.asked.push(who);
   record(s, `${actor.name}: ${s.speech} ${s.note}`);
 }
 
 function compare(s: GameState): boolean {
+  if (away(s) || s.halilLeft || s.caught) return false;
   if (s.told.halil === undefined || s.told.riza === undefined || s.told.halil === s.told.riza) return false;
   const a = contradicted(s.people.halil, {
     sourceId: 'nephew',
@@ -294,63 +371,73 @@ function compare(s: GameState): boolean {
   });
   if (a.applied || b.applied) {
     s.caught = true;
+    for (const who of ['halil', 'riza'] as const)
+      socialEvent(s.people[who], {
+        at: s.people[who].now,
+        kind: 'deceit-discovered',
+        otherId: 'nephew',
+        byMe: false,
+        magnitude: 0.8,
+      });
     record(
       s,
-      'Halil and Rıza compared your accounts. You had promised the same floor for morning work and for storage. HF recorded both opposite accounts with you as the source.',
+      'Halil and Rıza compared your accounts. You had promised the same floor for morning work and for storage. Both know the conflicting accounts came from you.',
     );
   }
   return a.applied || b.applied;
 }
 
-function propose(s: GameState, kind: 'morning' | 'late' | 'shared') {
+function propose(s: GameState, kind: 'morning' | 'late' | 'shared', smaller = false) {
   s.proposal = null;
-  if (kind === 'shared') {
-    if (s.told.halil !== undefined && s.told.riza !== undefined && !s.caught) {
-      s.proposal = {
-        id: s.nextProposal++,
-        kind: 'shared',
-        cost: 0,
-        terms:
-          'Morning repairs and inside storage, with no contribution from you. Each listener is relying on your private assurance about priority.',
-        consents: [],
-      };
-      s.page = 'signing';
-      s.note =
-        'Your private assurances unlock a no-cash draft. Halil and Rıza have each given provisional support. Before signing, they must compare the priority you promised each of them.';
-    } else
-      s.note =
-        'The cart blocks the repair floor. Halil needs clear space; Rıza needs storage until four. Move the cart outside or move the work later.';
-    record(s, s.note);
-    return;
-  }
-  const found = compare(s);
   if (kind === 'late' && !s.letter) {
+    s.note = 'Ferda needs the clothing order before she can fund late work. Fetch the letter.';
+    record(s, s.note);
+    return;
+  }
+  if (kind === 'shared' && (s.told.halil === undefined || s.told.riza === undefined || s.caught)) {
     s.note =
-      'Ferda cannot fund late work without the order details. Fetch the letter from the depot, or fund morning work yourself.';
+      'Halil wants a ₺40 guarantee before he will accept a smaller repair space. Speak to both men or choose another agreement.';
     record(s, s.note);
     return;
   }
-  const deposit = s.caught || ORDER.some((id) => trustOf(s.people[id], 'nephew') < 0.7) ? 40 : 0;
-  const cost = (kind === 'morning' ? 100 : 40) + deposit;
+  const deposit = s.caught ? 40 : 0;
+  const cost =
+    (kind === 'morning' ? (smaller && s.asked.includes('riza') ? 60 : 100) : kind === 'late' ? 40 : 0) +
+    deposit;
   if (cost > 100) {
-    s.note = `This needs ₺${cost}, including the deposit. Your travel fund has only ₺100. The late service costs less if you fetch the letter.`;
-    record(s, s.note);
+    s.note = `This costs ₺${cost}, including the deposit. You have ₺100. The smaller late service costs less.`;
     return;
   }
+  const concessions = [...s.asked];
   const terms =
-    kind === 'morning'
-      ? 'Halil works from eight to two. Rıza stores the cart outside in a rented space. Ferda takes the new lease. You cover the ₺60 rent gap and ₺40 storage cost.'
-      : 'Halil works from five to nine on the clothing order. Rıza stores the cart inside until four, then takes it home. Ferda takes the new lease. You cover ₺40 for the first collection.';
+    kind === 'shared'
+      ? 'Halil does small repairs on the marked bench. Rıza keeps his cart in the marked bay. Ferda runs the agreed service. Both men waive their ₺40 guarantees. The smaller service covers rent. You pay nothing.'
+      : kind === 'morning'
+        ? `Halil works mornings on a clear floor. Rıza stores his cart ${smaller && concessions.includes('riza') ? 'in his own yard' : 'in rented outside space'}. You cover the rent gap${smaller && concessions.includes('riza') ? '' : ' and storage'}.`
+        : `Halil works five to nine on the clothing order${concessions.includes('halil') ? ', with a paid break' : ', without a paid break'}. Rıza ${concessions.includes('riza') ? 'takes his cart home at four' : 'keeps his cart inside overnight'}. You pay ₺40 for the first collection.`;
   s.proposal = {
     id: s.nextProposal++,
     kind,
     cost,
-    terms: `${terms}${deposit ? ' You also pay a ₺40 deposit today.' : ''}`,
+    smaller,
+    concessions,
+    terms: `${terms} ${smaller ? 'Ferda takes a smaller service on a one-month trial lease.' : 'Ferda takes the full shop on a year lease.'}${deposit ? ' You also pay a ₺40 deposit.' : ''}`,
     consents: [],
   };
   s.page = 'signing';
-  s.note = `${found ? 'They compare your conflicting accounts and require a deposit. ' : ''}${s.proposal.terms} Total from your fund: ₺${cost}. Read the terms together before anyone signs.`;
-  record(s, `Proposal ${s.proposal.id}: ${s.proposal.terms}`);
+  s.note = `${s.proposal.terms} Total from your fund: ₺${cost}.`;
+  record(s, `Agreement ${s.proposal.id}: ${s.proposal.terms}`);
+}
+function refusal(p: Proposal, who: Who): string | null {
+  if (who === 'halil' && p.kind === 'late' && !p.concessions.includes('halil'))
+    return 'Halil refuses: late work needs a paid break. Ask him about a change.';
+  if (who === 'riza' && p.kind === 'late' && !p.concessions.includes('riza'))
+    return 'Rıza refuses: he can take the cart home at four, but that must be written down. Ask him.';
+  if (who === 'osman' && p.smaller && !p.concessions.includes('osman'))
+    return 'Osman refuses: a trial lease needs his agreement. Ask him about rent.';
+  if (who === 'ferda' && !p.smaller)
+    return 'Ferda refuses: she needs a smaller service and a trial lease. Ask her what she would choose.';
+  return null;
 }
 
 export function act(s: GameState, input: Input): void {
@@ -380,7 +467,15 @@ export function act(s: GameState, input: Input): void {
     return;
   }
   if (command === 'hear' || command === 'private' || command === 'offer') {
-    if (command === 'offer') s.proposal = null;
+    if (command === 'offer') {
+      if (s.halilLeft) {
+        spendTime(s, 2);
+        if (s.result !== 'playing') return;
+        s.halilLeft = false;
+        s.note = 'You call Halil back from the street. He must read and sign a changed agreement again.';
+      }
+      s.proposal = null;
+    }
     s.page = command;
     return;
   }
@@ -393,7 +488,7 @@ export function act(s: GameState, input: Input): void {
     return;
   }
   if (command.startsWith('ask_')) {
-    spendTime(s, 3);
+    spendTime(s, 2);
     if (s.result === 'playing') talk(s, command.slice(4) as Who);
     return;
   }
@@ -402,7 +497,7 @@ export function act(s: GameState, input: Input): void {
     if (s.result !== 'playing') return;
     s.letter = true;
     s.note =
-      'You brought back the letter. The supplier offers paid repairs collected after nine each evening. Halil can work after Rıza takes the cart home at four. Ferda can cover the rent from the order. Your first collection still costs ₺40. The letter settles none of Nuri’s intentions.';
+      'You brought back the letter. The supplier offers paid repairs collected after nine each evening. The order can cover rent for a smaller late service. The first collection costs ₺40. Ask them which changes they can accept.';
     seedBelief(s.people.ferda, 'order.supports-late-service', {
       value: true,
       credence: 0.97,
@@ -420,8 +515,8 @@ export function act(s: GameState, input: Input): void {
     s.told[who] = value;
     believe(s.people[who], PROP, value, 0.95, 'nephew', s.people[who].now);
     s.note = value
-      ? 'Halil provisionally supports morning work with no outside storage cost, based on your assurance. He will read the terms with Rıza before signing.'
-      : 'Rıza provisionally supports free storage inside, based on your assurance that there will be no morning work. He will read the terms with Halil before signing.';
+      ? 'Halil agrees to waive his ₺40 guarantee because of what you told him. He will read the marked spaces in the agreement before signing.'
+      : 'Rıza agrees to waive his ₺40 guarantee because of what you told him. He will read the marked spaces in the agreement before signing.';
     record(
       s,
       `You told ${s.people[who].name}: ${value ? 'The floor is reserved for morning work.' : 'The floor is not reserved for morning work.'} ${s.note}`,
@@ -431,51 +526,112 @@ export function act(s: GameState, input: Input): void {
   if (command === 'disclose') {
     spendTime(s, 2);
     if (s.result !== 'playing') return;
-    compare(s);
+    // The written confession is direct evidence of our own conflicting account,
+    // including for a recipient who receives it while out on the delivery round.
+    for (const who of ['halil', 'riza'] as const) {
+      const account = s.told[who];
+      if (account === undefined) continue;
+      contradicted(s.people[who], { sourceId: 'nephew', prop: PROP, value: !account, at: s.people[who].now });
+      socialEvent(s.people[who], {
+        at: s.people[who].now,
+        kind: 'deceit-discovered',
+        otherId: 'nephew',
+        byMe: false,
+        magnitude: 0.8,
+      });
+    }
     s.caught = true;
+    s.proposal = null;
     s.note =
-      'You withdraw your private assurances where everyone can hear. They will consider practical terms, with a ₺40 deposit paid today.';
+      'You write a correction for each man: your private promises were false. Rıza receives his on his delivery round. They will consider a new agreement with a ₺40 deposit.';
     record(s, s.note);
+    return;
+  }
+  if (command === 'release_halil') {
+    s.halilLeft = true;
+    s.page = 'signing';
+    s.note =
+      'Halil takes a copy of the agreement and leaves for his workshop. His signature stays on this agreement. He and Rıza cannot compare accounts here after he leaves.';
+    record(s, s.note);
+    return;
+  }
+  if (command === 'wait') {
+    spendTime(s, Math.max(1, s.remaining - 10));
+    if (s.result === 'playing') {
+      s.page = 'signing';
+      s.note = 'Rıza returns from his delivery round. He can read and sign the agreement now.';
+      record(s, s.note);
+    }
     return;
   }
   if (command === 'sign') {
     const p = s.proposal;
-    if (!p) throw new Error('Write a proposal first.');
-    spendTime(s, 1);
+    if (!p) throw new Error('Write an agreement first.');
+    const next = ORDER.find((id) => !p.consents.includes(id) && (id !== 'riza' || !away(s)));
+    const finalReady = p.consents.length === 3 && !!next && !refusal(p, next);
+    spendTime(s, 1, finalReady);
     if (s.result !== 'playing') return;
-    if (p.kind === 'shared') {
-      compare(s);
+    const compared = compare(s);
+    if (compared) {
       s.proposal = null;
       s.page = 'table';
       s.note =
-        'Halil and Rıza compare what you told them. You promised opposite priorities for the same floor. They withdraw support for the free draft. A new agreement needs a ₺40 deposit paid today. You can still fetch the letter and offer late work.';
+        'Halil and Rıza compare what you told them. You promised each man the whole floor. They withdraw their fee waivers. A new agreement needs a ₺40 deposit paid today. Choose a new agreement. A smaller morning service with Rıza’s yard can fit your fund; the letter also supports late work.';
+      if (s.remaining === 0) {
+        s.result = 'loss';
+        s.page = 'ending';
+        s.note = 'The comparison left no complete agreement at the appointment time. Osman left.';
+      }
       record(s, s.note);
       return;
     }
-    const who = ORDER[p.consents.length];
-    if (!who) return;
+    const who = ORDER.find((id) => !p.consents.includes(id) && (id !== 'riza' || !away(s)));
+    if (!who) {
+      s.page = 'signing';
+      s.note = 'Rıza is still delivering. His signature must wait until he returns with 10 minutes left.';
+      return;
+    }
+    const reason = refusal(p, who);
+    if (reason) {
+      s.note = reason;
+      s.page = 'signing';
+      record(s, reason);
+      return;
+    }
     p.consents.push(who);
+    socialEvent(s.people[who], {
+      at: s.people[who].now,
+      kind: 'shared-work',
+      otherId: 'nephew',
+      byMe: false,
+      magnitude: 0.7,
+    });
     const reasons: Record<Who, string> = {
       halil: 'The agreed shift gives him paid work on a clear floor.',
       riza: 'The cart has a place for the hours he needs.',
       osman: 'The first month of the new rent is funded.',
       ferda: 'The work can pay. She chooses to take the new lease.',
     };
-    s.note = `${s.people[who].name} signs proposal ${p.id}. ${reasons[who]}`;
+    s.note = `${compared ? 'Halil and Rıza compared your conflicting accounts. They now check everything in the agreement. ' : ''}${s.people[who].name} signs agreement ${p.id}. ${reasons[who]}`;
     record(s, s.note);
+    if (p.kind === 'shared' && p.consents.includes('halil'))
+      s.note += ' Halil has read the marked spaces and signed. Rıza must still agree to his own fee waiver.';
     s.page = 'signing';
     if (p.consents.length === ORDER.length) {
       s.spent = p.cost;
       s.result = 'win';
       s.page = 'ending';
-      s.note = 'All four signed the same terms before Osman left. You paid your contribution.';
+      s.note = 'All four signed the same agreement before Osman left. You paid your contribution.';
       record(s, s.note);
     }
     return;
   }
   spendTime(s, 2);
   if (s.result !== 'playing') return;
-  if (command === 'morning' || command === 'late' || command === 'shared') propose(s, command);
+  if (command === 'shared_small') propose(s, 'shared', true);
+  else if (command === 'morning_small') propose(s, 'morning', true);
+  else if (command === 'late_small') propose(s, 'late', true);
+  else if (command === 'morning' || command === 'late' || command === 'shared') propose(s, command);
   else if (command === 'late_unproved') propose(s, 'late');
   else throw new Error('Unknown story command.');
 }

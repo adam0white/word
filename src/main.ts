@@ -220,7 +220,7 @@ function render(focus = true): void {
       element('p', 'Before you sit down', 'eyebrow'),
       heading('A note about recording'),
       paragraph(
-        'The lab records decisions, the run and where you stop. A pseudonymous browser identity can link your play across lab games. This helps us find confusing choices. You can turn recording off here or in the menu.',
+        'The lab records your decisions and where you stop. A browser ID can link your play across lab games. This helps us find confusing choices. You can turn recording off here or in the menu.',
       ),
       paragraph(
         'Your browser’s privacy signal is respected. Feedback you choose to send still works when recording is off.',

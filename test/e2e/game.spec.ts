@@ -49,21 +49,76 @@ test('lab replay rejects malformed imports and retains the current meeting', asy
   await expect(page.locator('main h1')).toHaveText(title ?? '');
 });
 
-test('an honest agreement and a failed meeting both reach an ending', async ({ page }) => {
+async function choice(page: import('@playwright/test').Page, text: string) {
+  await page.locator('[data-choice]').filter({ hasText: text }).click();
+}
+
+async function ask(page: import('@playwright/test').Page, name: string) {
+  await choice(page, 'Hear what');
+  await choice(page, `Ask ${name}`);
+}
+
+async function signatures(page: import('@playwright/test').Page) {
+  for (let person = 0; person < 4; person++) await choice(page, 'next person');
+}
+
+test('careful asking and the letter reach an agreement, while ending the meeting loses', async ({ page }) => {
   await takeSeat(page);
-  await page.getByRole('button', { name: 'Put the notebook on the table.' }).click();
-  await page.getByRole('button', { name: 'Write a proposal.' }).click();
-  await page
-    .getByRole('button', { name: 'Morning work. Rent an outside cart space. You cover ₺100.' })
-    .click();
-  for (let person = 0; person < 4; person++) {
-    await page.getByRole('button', { name: 'Ask the next person to sign. Takes one minute.' }).click();
-  }
+  await choice(page, 'Put the notebook');
+  for (const name of ['Halil', 'Rıza', 'Osman', 'Ferda']) await ask(page, name);
+  await choice(page, 'Fetch Nuri');
+  await choice(page, 'Write an agreement');
+  await choice(page, 'Use the clothing order for a smaller late service');
+  await expect(page.locator('main')).toContainText('4 minutes needed');
+  await signatures(page);
   await expect(page.getByText('AGREED', { exact: true })).toBeVisible();
   await expect(page.locator('main')).toContainText('month');
+  await expect(page.locator('main')).toContainText('₺40');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole('button', { name: 'Begin again', exact: true }).click();
   await page.getByRole('button', { name: 'Start new game', exact: true }).click();
-  await page.getByRole('button', { name: 'Put the notebook on the table.' }).click();
-  await page.getByRole('button', { name: 'Let Osman leave. End the meeting.' }).click();
+  await choice(page, 'Put the notebook');
+  await choice(page, 'Let Osman leave');
   await expect(page.getByText('NO AGREEMENT', { exact: true })).toBeVisible();
+});
+
+test('an uninformed agreement receives an actionable refusal and all actions show time', async ({ page }) => {
+  await takeSeat(page);
+  await choice(page, 'Put the notebook');
+  await choice(page, 'Write an agreement');
+  await choice(page, 'Morning work. Rent an outside');
+  for (let person = 0; person < 4; person++) {
+    const before = await page.locator('.eyebrow').textContent();
+    await choice(page, 'next person');
+    if ((await page.locator('main').textContent())?.includes('refuses')) {
+      expect(await page.locator('.eyebrow').textContent()).not.toBe(before);
+      break;
+    }
+  }
+  await expect(page.locator('main')).toContainText('Ferda refuses:');
+  await expect(page.getByText('AGREED', { exact: true })).toHaveCount(0);
+  const labels = await page.locator('[data-choice]').allTextContents();
+  expect(labels.every((label) => /\(\d+ minutes?\)/.test(label))).toBe(true);
+});
+
+test('private assurances have a cash payoff during the delivery round', async ({ page }) => {
+  await takeSeat(page);
+  await choice(page, 'Put the notebook');
+  await choice(page, 'in private');
+  await choice(page, 'Tell Halil');
+  await choice(page, 'in private');
+  await choice(page, 'Tell Rıza');
+  await ask(page, 'Osman');
+  await ask(page, 'Ferda');
+  await choice(page, 'Write an agreement');
+  await choice(page, 'Small repairs and cart inside. Smaller service');
+  await expect(page.locator('main')).toContainText('delivery round');
+  await choice(page, 'next person');
+  await choice(page, 'Let Halil return');
+  for (let n = 0; n < 2; n++) await choice(page, 'next person');
+  await expect(page.locator('main')).toContainText('2 minutes needed');
+  await choice(page, 'Wait for Rıza');
+  await choice(page, 'next person');
+  await expect(page.getByText('AGREED', { exact: true })).toBeVisible();
+  await expect(page.locator('main')).toContainText('₺0');
 });
