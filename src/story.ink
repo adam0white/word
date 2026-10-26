@@ -8,13 +8,12 @@ Your uncle Nuri died last week. His shop is shut. Four people have come to decid
 He promised Halil morning repair work. He promised Rıza space for a delivery cart on the same floor. Both heard him clearly. Neither can speak for him now.
 Ferda will take a new lease only if the work can pay. Osman owns the room. He leaves in twenty-four minutes to meet another tenant.
 Nuri left a letter at the depot. Fetching it takes six minutes. Ferda says it concerns a clothing order, not who owns anything.
-You have £100 set aside for your journey home. You can spend it to make an agreement work.
+You have ₺100 set aside for your journey home. You can spend it to make an agreement work.
 * [Put the notebook on the table.]
   @start
   -> END
 
 === table ===
-{remaining()} minutes until Osman leaves.
 Agree on work hours, cart storage and rent. Everyone must sign the same terms.
 * [Hear what someone needs.]
   @hear
@@ -52,11 +51,11 @@ Each conversation takes three minutes. A refusal tells you what must change.
 
 === offer ===
 These are future arrangements between the people here. Nuri's words cannot make anyone accept them.
-{flag("caught"):After your conflicting statements, they also require a £40 deposit paid today.}
-* [Morning work. Rent an outside cart space. You cover £100.]
+{flag("caught"):After your conflicting statements, they also require a ₺40 deposit paid today.}
+* [Morning work. Rent an outside cart space. You cover ₺100.]
   @morning
   -> END
-* {flag("letter")} [Late work after the cart leaves. Use the clothing order. You cover £40.]
+* {flag("letter")} [Late work after the cart leaves. Use the clothing order. You cover ₺40.]
   @late
   -> END
 * {not flag("letter")} [Suggest late work without the letter.]
@@ -77,7 +76,7 @@ Halil and Rıza will compare your words before they sign. A cheap agreement base
 * {not flag("told_riza")} [Tell Rıza: “The floor is not reserved for morning work. Everyone agreed.” This is false.]
   @tell_riza
   -> END
-* {flag("told_halil") || flag("told_riza")} [Withdraw my private assurances in front of everyone. Pay a £40 deposit on any agreement.]
+* {flag("told_halil") || flag("told_riza")} [Withdraw my private assurances in front of everyone. Pay a ₺40 deposit on any agreement.]
   @disclose
   -> END
 * [Return to the table.]

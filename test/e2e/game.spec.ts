@@ -54,7 +54,7 @@ test('an honest agreement and a failed meeting both reach an ending', async ({ p
   await page.getByRole('button', { name: 'Put the notebook on the table.' }).click();
   await page.getByRole('button', { name: 'Write a proposal.' }).click();
   await page
-    .getByRole('button', { name: 'Morning work. Rent an outside cart space. You cover £100.' })
+    .getByRole('button', { name: 'Morning work. Rent an outside cart space. You cover ₺100.' })
     .click();
   for (let person = 0; person < 4; person++) {
     await page.getByRole('button', { name: 'Ask the next person to sign. Takes one minute.' }).click();

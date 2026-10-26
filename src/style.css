@@ -176,8 +176,7 @@ cite {
   line-height: 1.3;
   position: relative;
 }
-.choice:after {
-  content: "↗";
+.choice-arrow {
   position: absolute;
   right: 0;
   top: 17px;

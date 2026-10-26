@@ -190,7 +190,7 @@ export function view(s: GameState): {
         ? [
             `The shop is open. ${terms}`,
             `Ferda paid the agreed rent. Halil completed the ${s.proposal?.kind === 'late' ? 'late' : 'morning'} shifts. Rıza kept the agreed storage hours.`,
-            `Your contribution was £${s.spent}. ${s.spent === 100 ? 'You took the overnight coach home instead of your train.' : 'You kept enough for the train home.'}`,
+            `Your contribution was ₺${s.spent}. ${s.spent === 100 ? 'You took the overnight coach home instead of your train.' : 'You kept enough for the train home.'}`,
             'Nobody has proved what Nuri meant. The agreement holds because they chose these terms.',
           ]
         : [
@@ -238,11 +238,11 @@ function spendTime(s: GameState, minutes: number) {
 const needs: Record<Who, string> = {
   halil:
     'Halil needs a clear floor and paid work. He still rents his own workshop from Osman; this is an extra job. He can work late if there is a steady order.',
-  riza: 'Rıza needs cart space until four. He can take it home then. Outside space is available for £40, but he cannot pay for it.',
+  riza: 'Rıza needs cart space until four. He can take it home then. Outside space is available for ₺40, but he cannot pay for it.',
   osman:
     'Osman needs the new rent covered. He will accept Ferda as tenant if the first month is funded. Halil’s existing rent account stays separate.',
   ferda:
-    'Ferda needs a viable opening month. Morning work leaves a £60 rent gap. The clothing order may pay that gap, but its collection hours are in the letter at the depot.',
+    'Ferda needs a viable opening month. Morning work leaves a ₺60 rent gap. The clothing order may pay that gap, but its collection hours are in the letter at the depot.',
 };
 const phrases: Record<string, string> = {
   'nuri.promised-morning-work':
@@ -270,7 +270,7 @@ function talk(s: GameState, who: Who) {
   s.speech = result.told.map((p) => p.summary).join(' ');
   s.note =
     who === 'ferda' && s.letter
-      ? 'Ferda has read the letter. The paid clothing order covers late work and rent. She needs £40 for the first collection.'
+      ? 'Ferda has read the letter. The paid clothing order covers late work and rent. She needs ₺40 for the first collection.'
       : needs[who];
   s.asked.push(who);
   record(s, `${actor.name}: ${s.speech} ${s.note}`);
@@ -333,23 +333,23 @@ function propose(s: GameState, kind: 'morning' | 'late' | 'shared') {
   const deposit = s.caught || ORDER.some((id) => trustOf(s.people[id], 'nephew') < 0.7) ? 40 : 0;
   const cost = (kind === 'morning' ? 100 : 40) + deposit;
   if (cost > 100) {
-    s.note = `This needs £${cost}, including the deposit. Your travel fund has only £100. The late service costs less if you fetch the letter.`;
+    s.note = `This needs ₺${cost}, including the deposit. Your travel fund has only ₺100. The late service costs less if you fetch the letter.`;
     record(s, s.note);
     return;
   }
   const terms =
     kind === 'morning'
-      ? 'Halil works from eight to two. Rıza stores the cart outside in a rented space. Ferda takes the new lease. You cover the £60 rent gap and £40 storage cost.'
-      : 'Halil works from five to nine on the clothing order. Rıza stores the cart inside until four, then takes it home. Ferda takes the new lease. You cover £40 for the first collection.';
+      ? 'Halil works from eight to two. Rıza stores the cart outside in a rented space. Ferda takes the new lease. You cover the ₺60 rent gap and ₺40 storage cost.'
+      : 'Halil works from five to nine on the clothing order. Rıza stores the cart inside until four, then takes it home. Ferda takes the new lease. You cover ₺40 for the first collection.';
   s.proposal = {
     id: s.nextProposal++,
     kind,
     cost,
-    terms: `${terms}${deposit ? ' You also pay a £40 deposit today.' : ''}`,
+    terms: `${terms}${deposit ? ' You also pay a ₺40 deposit today.' : ''}`,
     consents: [],
   };
   s.page = 'signing';
-  s.note = `${found ? 'They compare your conflicting accounts and require a deposit. ' : ''}${s.proposal.terms} Total from your fund: £${cost}. Read the terms together before anyone signs.`;
+  s.note = `${found ? 'They compare your conflicting accounts and require a deposit. ' : ''}${s.proposal.terms} Total from your fund: ₺${cost}. Read the terms together before anyone signs.`;
   record(s, `Proposal ${s.proposal.id}: ${s.proposal.terms}`);
 }
 
@@ -402,7 +402,7 @@ export function act(s: GameState, input: Input): void {
     if (s.result !== 'playing') return;
     s.letter = true;
     s.note =
-      'You brought back the letter. The supplier offers paid repairs collected after nine each evening. Halil can work after Rıza takes the cart home at four. Ferda can cover the rent from the order. Your first collection still costs £40. The letter settles none of Nuri’s intentions.';
+      'You brought back the letter. The supplier offers paid repairs collected after nine each evening. Halil can work after Rıza takes the cart home at four. Ferda can cover the rent from the order. Your first collection still costs ₺40. The letter settles none of Nuri’s intentions.';
     seedBelief(s.people.ferda, 'order.supports-late-service', {
       value: true,
       credence: 0.97,
@@ -434,7 +434,7 @@ export function act(s: GameState, input: Input): void {
     compare(s);
     s.caught = true;
     s.note =
-      'You withdraw your private assurances where everyone can hear. They will consider practical terms, with a £40 deposit paid today.';
+      'You withdraw your private assurances where everyone can hear. They will consider practical terms, with a ₺40 deposit paid today.';
     record(s, s.note);
     return;
   }
@@ -448,7 +448,7 @@ export function act(s: GameState, input: Input): void {
       s.proposal = null;
       s.page = 'table';
       s.note =
-        'Halil and Rıza compare what you told them. You promised opposite priorities for the same floor. They withdraw support for the free draft. A new agreement needs a £40 deposit paid today. You can still fetch the letter and offer late work.';
+        'Halil and Rıza compare what you told them. You promised opposite priorities for the same floor. They withdraw support for the free draft. A new agreement needs a ₺40 deposit paid today. You can still fetch the letter and offer late work.';
       record(s, s.note);
       return;
     }

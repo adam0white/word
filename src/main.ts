@@ -54,6 +54,11 @@ function element<K extends keyof HTMLElementTagNameMap>(
 function button(text: string, action: () => void, className = ''): HTMLButtonElement {
   const node = element('button', text, className);
   node.type = 'button';
+  if (className === 'choice') {
+    const arrow = element('span', '↗', 'choice-arrow');
+    arrow.setAttribute('aria-hidden', 'true');
+    node.append(arrow);
+  }
   node.addEventListener('click', action);
   return node;
 }
@@ -161,13 +166,13 @@ function render(focus = true): void {
     );
     const prose = element('div', '', 'prose');
     for (const line of scene.prose) prose.append(paragraph(line));
-    leaf.append(prose);
     if (scene.speech) {
       const quote = element('blockquote');
       if (scene.speaker) quote.append(element('cite', scene.speaker));
       quote.append(paragraph(scene.speech));
       leaf.append(quote);
     }
+    leaf.append(prose);
     const choices = element('div', '', 'choices');
     choices.setAttribute('aria-label', 'Your next decision');
     for (const choice of scene.choices) {
