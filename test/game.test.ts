@@ -399,3 +399,64 @@ it('includes a delivery round that will begin before Rıza can finish signing', 
   expect(s.remaining).toBe(20);
   expect(view(s).prose.join(' ')).toContain('11 minutes needed');
 });
+
+describe('agreement previews before writing', () => {
+  it('shows exact late terms, fund cost and unknown acceptance without spending time', () => {
+    const s = start();
+    choose(s, 'Fetch Nuri');
+    choose(s, 'Write an agreement');
+    const before = hashState(s);
+    const offer = view(s).choices.find((c) => c.text.includes('smaller late service'));
+    expect(offer?.text).toContain('without a paid break');
+    expect(offer?.text).toContain('inside overnight');
+    expect(offer?.text).toContain('Total from your fund: ₺40');
+    expect(offer?.text).toContain('acceptance unknown');
+    expect(hashState(s)).toBe(before);
+    choose(s, 'smaller late service');
+    expect(offer?.text).toContain(s.proposal?.terms);
+    expect(s.remaining).toBe(16);
+    expect(replayRun(exportRun(s))).toEqual(s);
+  });
+  it('previews asked concessions and known full-lease refusal', () => {
+    const s = start();
+    askAll(s);
+    choose(s, 'Fetch Nuri');
+    choose(s, 'Write an agreement');
+    const offers = view(s).choices;
+    const late = offers.find((c) => c.text.includes('smaller late service'));
+    expect(late?.text).toContain('with a paid break');
+    expect(late?.text).toContain('takes his cart home at four');
+    expect(offers.find((c) => c.text.includes('Late work. Use'))?.text).toContain('Ferda refuses');
+    choose(s, 'smaller late service');
+    expect(late?.text).toContain(s.proposal?.terms);
+  });
+  it('warns of the unaffordable deposit and unresolved trial lease before writing', () => {
+    const s = start();
+    choose(s, 'in private');
+    choose(s, 'Tell Halil');
+    choose(s, 'in private');
+    choose(s, 'Withdraw your');
+    choose(s, 'Write an agreement');
+    const full = view(s).choices.find((c) => c.text.includes('Rent an outside'));
+    expect(full?.text).toContain('₺140');
+    expect(full?.text).toContain('You have ₺100');
+    expect(full?.text).not.toContain('Ferda refuses');
+    const shared = view(s).choices.find((c) => c.text.startsWith('Small repairs'));
+    expect(shared?.text).toContain('₺40 deposit');
+    expect(shared?.text).not.toContain('You pay nothing.');
+    expect(view(s).choices.find((c) => c.text.includes('Morning work. Smaller'))?.text).toContain('Osman');
+    const before = s.remaining;
+    choose(s, 'Rent an outside');
+    expect(s.remaining).toBe(before - 2);
+    expect(s.proposal).toBeNull();
+    expect(s.note).toContain('₺140');
+  });
+  it('does not describe a failed meeting as a warm visit to the closed shop', () => {
+    const s = start();
+    choose(s, 'Hear what');
+    choose(s, 'Ask Halil');
+    choose(s, 'Let Osman leave');
+    expect(view(s).prose.join(' ')).not.toContain('ask you to sit');
+    expect(view(s).prose.join(' ')).not.toContain('asks you to sit');
+  });
+});

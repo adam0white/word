@@ -20,7 +20,6 @@ export function coldPolicy(approach: 'ask-first' | 'repair-refusal' = 'ask-first
       return c.id;
     };
     if (find(/Put the notebook/)) return take(/Put the notebook/);
-    if (/refuses:/.test(screen.text)) refused = true;
     const questions = choices.filter((c) => /^Ask .+ about/.test(c.text));
     if (questions.length) {
       const question = questions.find((c) => !asked.has(c.text));
@@ -32,6 +31,7 @@ export function coldPolicy(approach: 'ask-first' | 'repair-refusal' = 'ask-first
       return take(/Return to the table/);
     }
     if (find(/next person to sign|Wait for Rıza/)) {
+      if (/refuses:/.test(screen.text)) refused = true;
       if (refused) return take(/Hear what/);
       return take(/next person to sign|Wait for Rıza/);
     }

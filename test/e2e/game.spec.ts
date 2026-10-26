@@ -99,6 +99,13 @@ test('an uninformed agreement receives an actionable refusal and all actions sho
   await expect(page.getByText('AGREED', { exact: true })).toHaveCount(0);
   const labels = await page.locator('[data-choice]').allTextContents();
   expect(labels.every((label) => /\(\d+ minutes?\)/.test(label))).toBe(true);
+  for (let n = 0; n < 24; n++) {
+    if ((await page.locator('.eyebrow').textContent())?.startsWith('1 minute before')) break;
+    await choice(page, 'next person');
+  }
+  await expect(page.locator('.eyebrow')).toHaveText('1 minute before Osman leaves');
+  await choice(page, 'next person');
+  await expect(page.getByText('NO AGREEMENT', { exact: true })).toBeVisible();
 });
 
 test('private assurances have a cash payoff during the delivery round', async ({ page }) => {
@@ -145,3 +152,27 @@ for (const approach of ['ask-first', 'repair-refusal'] as const) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
+
+test('draft choices show terms and costs before writing uses time', async ({ page }) => {
+  await takeSeat(page);
+  await choice(page, 'Put the notebook');
+  await choice(page, 'Fetch Nuri');
+  await choice(page, 'Write an agreement');
+  const before = await page.locator('.eyebrow').textContent();
+  const late = page
+    .locator('[data-choice]')
+    .filter({ hasText: 'Use the clothing order for a smaller late service' });
+  await expect(late).toContainText('without a paid break');
+  await expect(late).toContainText('₺40');
+  await expect(late).toContainText('2 minutes');
+  await expect(late).toContainText(/unknown|not yet|not asked/i);
+  expect(await page.locator('.eyebrow').textContent()).toBe(before);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await choice(page, 'Return to the table');
+  await ask(page, 'Halil');
+  await choice(page, 'Write an agreement');
+  await expect(late).toContainText('with a paid break');
+  await late.click();
+  await expect(page.locator('main')).toContainText('with a paid break');
+  await expect(page.locator('.eyebrow')).toContainText('14 minutes');
+});

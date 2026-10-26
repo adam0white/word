@@ -181,6 +181,7 @@ function flag(s: GameState, key: string): boolean {
 function ink(s: GameState) {
   const story = new Story(content);
   story.BindExternalFunction('remaining', () => s.remaining, true);
+  story.BindExternalFunction('preview', (key: string) => agreementPreview(s, key), true);
   story.BindExternalFunction('flag', (key: string) => flag(s, key), true);
   story.ChoosePathString(s.page);
   const prose: string[] = [];
@@ -201,7 +202,7 @@ function relationshipEnding(s: GameState): string[] {
     else if (tie.familiarity > 0) warm.push(actor.name);
   }
   return [
-    ...(warm.length
+    ...(warm.length && s.result === 'win'
       ? [
           `${warm.join(', ')} ${warm.length === 1 ? 'greets' : 'greet'} you and ${warm.length === 1 ? 'asks' : 'ask'} you to sit.`,
         ]
@@ -387,27 +388,21 @@ function compare(s: GameState): boolean {
   return a.applied || b.applied;
 }
 
-function propose(s: GameState, kind: 'morning' | 'late' | 'shared', smaller = false) {
-  s.proposal = null;
-  if (kind === 'late' && !s.letter) {
-    s.note = 'Ferda needs the clothing order before she can fund late work. Fetch the letter.';
-    record(s, s.note);
-    return;
-  }
-  if (kind === 'shared' && (s.told.halil === undefined || s.told.riza === undefined || s.caught)) {
-    s.note =
-      'Halil wants a ₺40 guarantee before he will accept a smaller repair space. Speak to both men or choose another agreement.';
-    record(s, s.note);
-    return;
-  }
+function agreementDraft(
+  s: GameState,
+  kind: Proposal['kind'],
+  smaller = false,
+): { proposal: Proposal; blocked: string | null } {
+  const blocked =
+    kind === 'late' && !s.letter
+      ? 'Ferda needs the clothing order before she can fund late work. Fetch the letter.'
+      : kind === 'shared' && (s.told.halil === undefined || s.told.riza === undefined || s.caught)
+        ? 'Halil wants a ₺40 guarantee before he will accept a smaller repair space. Speak to both men or choose another agreement.'
+        : null;
   const deposit = s.caught ? 40 : 0;
   const cost =
     (kind === 'morning' ? (smaller && s.asked.includes('riza') ? 60 : 100) : kind === 'late' ? 40 : 0) +
     deposit;
-  if (cost > 100) {
-    s.note = `This costs ₺${cost}, including the deposit. You have ₺100. The smaller late service costs less.`;
-    return;
-  }
   const concessions = [...s.asked];
   const terms =
     kind === 'shared'
@@ -415,8 +410,8 @@ function propose(s: GameState, kind: 'morning' | 'late' | 'shared', smaller = fa
       : kind === 'morning'
         ? `Halil works mornings on a clear floor. Rıza stores his cart ${smaller && concessions.includes('riza') ? 'in his own yard' : 'in rented outside space'}. You cover the rent gap${smaller && concessions.includes('riza') ? '' : ' and storage'}.`
         : `Halil works five to nine on the clothing order${concessions.includes('halil') ? ', with a paid break' : ', without a paid break'}. Rıza ${concessions.includes('riza') ? 'takes his cart home at four' : 'keeps his cart inside overnight'}. You pay ₺40 for the first collection.`;
-  s.proposal = {
-    id: s.nextProposal++,
+  const proposal: Proposal = {
+    id: s.nextProposal,
     kind,
     cost,
     smaller,
@@ -424,8 +419,51 @@ function propose(s: GameState, kind: 'morning' | 'late' | 'shared', smaller = fa
     terms: `${terms} ${smaller ? 'Ferda takes a smaller service on a one-month trial lease.' : 'Ferda takes the full shop on a year lease.'}${deposit ? ' You also pay a ₺40 deposit.' : ''}`,
     consents: [],
   };
+  return {
+    proposal,
+    blocked:
+      blocked ??
+      (cost > 100
+        ? `This costs ₺${cost}, including the deposit. You have ₺100. The smaller late service costs less.`
+        : null),
+  };
+}
+
+function agreementPreview(s: GameState, key: string): string {
+  const kind = key.startsWith('morning') ? 'morning' : key.startsWith('late') ? 'late' : 'shared';
+  const { proposal, blocked } = agreementDraft(s, kind, key.endsWith('_small'));
+  const unknown: string[] = [];
+  const conditions = ORDER.flatMap((who) => {
+    // Questions and earlier refusals are player knowledge; private actor state is not.
+    const known =
+      s.asked.includes(who) || s.log.some((entry) => entry.text.startsWith(`${s.people[who].name} refuses:`));
+    if (!known) {
+      unknown.push(s.people[who].name);
+      return [];
+    }
+    const reason = refusal(proposal, who);
+    return reason ? [reason] : [];
+  });
+  if (unknown.length) conditions.push(`${unknown.join(', ')}: acceptance unknown; ask before writing.`);
+  const terms =
+    s.caught && kind === 'shared'
+      ? proposal.terms.replace('You pay nothing.', 'The proposed fee waivers would cost nothing.')
+      : proposal.terms;
+  return ` ${terms} Total from your fund: ₺${proposal.cost}. Writing costs 2 minutes even if refused. ${[blocked, ...conditions].filter(Boolean).join(' ')}`;
+}
+
+function propose(s: GameState, kind: Proposal['kind'], smaller = false) {
+  s.proposal = null;
+  const { proposal, blocked } = agreementDraft(s, kind, smaller);
+  if (blocked) {
+    s.note = blocked;
+    if (proposal.cost <= 100) record(s, s.note);
+    return;
+  }
+  s.proposal = proposal;
+  s.nextProposal++;
   s.page = 'signing';
-  s.note = `${s.proposal.terms} Total from your fund: ₺${cost}.`;
+  s.note = `${s.proposal.terms} Total from your fund: ₺${s.proposal.cost}.`;
   record(s, `Agreement ${s.proposal.id}: ${s.proposal.terms}`);
 }
 function refusal(p: Proposal, who: Who): string | null {

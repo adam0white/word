@@ -159,7 +159,9 @@ function render(focus = true): void {
     leaf.append(
       element(
         'p',
-        scene.ending ? 'One month later' : `${state.remaining} minutes before Osman leaves`,
+        scene.ending
+          ? 'One month later'
+          : `${state.remaining} ${state.remaining === 1 ? 'minute' : 'minutes'} before Osman leaves`,
         'eyebrow',
       ),
       heading(scene.title),
@@ -185,6 +187,12 @@ function render(focus = true): void {
         },
         'choice',
       );
+      if (state.page === 'offer' && choice.text.includes('(2 minutes)')) {
+        const split = choice.text.indexOf('(2 minutes)') + '(2 minutes)'.length;
+        if (option.firstChild) option.firstChild.textContent = choice.text.slice(0, split);
+        const preview = element('span', choice.text.slice(split).trim(), 'agreement-preview');
+        option.insertBefore(preview, option.querySelector('.choice-arrow'));
+      }
       option.dataset.choice = choice.id;
       choices.append(option);
     }
