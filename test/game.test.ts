@@ -502,6 +502,10 @@ describe('HF 4.0 host contract', () => {
     expect(() => replayRun({ ...current, archive: { ...current.archive, version: 3 } })).toThrow(
       /earlier version/,
     );
+    expect(() => replayRun({ ...current, edition: 'word-6', framework: '4.1.0' })).toThrow(
+      /another version of His Word.*Start a fresh game/,
+    );
+    expect(() => replayRun({ ...current, archive: undefined })).toThrow(/invalid Human Framework record/);
   });
   it('resolves each conversation request once and lets HF replay the archive exactly', () => {
     const s = start();

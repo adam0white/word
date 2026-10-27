@@ -319,6 +319,8 @@ export function createGame(seed: number): GameState {
  * attention, because both sit at the same table. Returns the claims the nephew actually heard. */
 function advance(s: GameState, inputs: HfInput[] = [], at = clock(s)): PerceptClaim[] {
   const held = hf(s);
+  if (at < held.at && inputs.length)
+    throw new Error('His Word tried to send inputs to a time already passed.');
   if (at < held.at || (at === held.at && !inputs.length)) return [];
   const heard: PerceptClaim[] = [];
   const settled = new Set<string>();
@@ -677,6 +679,8 @@ function compare(s: GameState): boolean {
   if (away(s) || s.halilLeft || s.caught) return false;
   if (s.told.halil === undefined || s.told.riza === undefined || s.told.halil === s.told.riza) return false;
   const before = noted(s);
+  // HF 4.0 closes a time once stepped, so a second batch at clock(s) is refused. The host places the
+  // comparison at the middle of the signing minute it has already reached; HF never runs ahead of it.
   const at = clock(s) - MINUTE / 2;
   advance(
     s,
@@ -1163,6 +1167,7 @@ export function exportRun(s: GameState) {
 }
 const EARLIER =
   'This run is from an earlier version of His Word, which used Human Framework 3. It cannot be replayed here. Start a fresh game.';
+const OTHER = 'This run is from another version of His Word. It cannot be replayed here. Start a fresh game.';
 /** Rebuilds a current-edition export from its seed and input log, then requires the same host state
  * and the identical HF archive (spec, input log, state and hashes). Anything else is refused before
  * any run exists. HF's own `replay` of the archive is checked in the replay test. */
@@ -1170,9 +1175,14 @@ export function replayRun(value: unknown): GameState {
   if (!value || typeof value !== 'object') throw new Error('This is not a His Word run.');
   const x = value as Partial<ReturnType<typeof exportRun>>;
   if (x.game !== 'word') throw new Error('This is not a His Word run.');
-  if (x.edition !== EDITION || x.framework !== HF) throw new Error(EARLIER);
   const hfArchive = x.archive as DeepReadonly<RunArchive> | undefined;
-  if (hfArchive?.format !== 'hf-run' || hfArchive.version !== 4) throw new Error(EARLIER);
+  const fromHf3 =
+    (typeof x.framework === 'string' && x.framework.startsWith('3.')) ||
+    (hfArchive?.format === 'hf-run' && (hfArchive.version as number) === 3);
+  if (fromHf3) throw new Error(EARLIER);
+  if (x.edition !== EDITION || x.framework !== HF) throw new Error(OTHER);
+  if (hfArchive?.format !== 'hf-run' || hfArchive.version !== 4)
+    throw new Error('This run has an invalid Human Framework record.');
   if (!Array.isArray(x.inputs) || typeof x.hash !== 'string' || typeof x.seed !== 'number')
     throw new Error('This run has an invalid input log.');
   const s = createGame(x.seed);
