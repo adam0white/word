@@ -37,9 +37,9 @@ to choose it. Read the reply and the minutes left before choosing again.
 
 The ending shows the arrangement and relationships one month later.
 **Open notebook** reviews what was said. **Menu** has **Resume**, **Notebook**,
-**Feedback**, **Export playtest**, **New game**, **All games** and, where supported,
+**Feedback**, **Open a file**, **New game**, **All games** and, where supported,
 **Fullscreen**. **Back** returns to play. New game asks before replacing your
-current place. Browser storage keeps your place when available.
+current place. Browser storage keeps your place when available. A collapsed **Debug** item beside recording privacy contains export and replay tools.
 
 ## What Human Framework supplies
 
@@ -72,7 +72,7 @@ general autonomous simulation. It starts fresh people, with no imported saves.
 ## Replay, recording and Feedback
 
 **Export playtest** downloads the seed, input log, complete state, edition and
-HF pin. Open `?lab=1`, then **Menu → Lab tools → Import a playtest export** to
+HF pin. Open **Menu → Debug → Replay tools → Import a playtest export** to
 reconstruct a run and check its state and hash. **Resume replay** returns to play.
 Only the current `word-5` edition with HF 4.0.0 is accepted. An earlier export
 or save, including every HF 3 run, is refused before any state changes, with a
@@ -99,12 +99,12 @@ See the [recording and privacy notice](https://human.adamwhite.work/lab/privacy/
 
 ### Open a file without replacing your browser save
 
-Open `?file=1` and choose a complete current `word-5` / HF 4.0.0 export.
+Open **Menu → Open a file** (the `/file` route) and choose a complete current `word-5` / HF 4.0.0 export.
 This route opens the chooser before reading your saved meeting or creating a
 new one. It does not read or write the Word save or notice keys. The opened
 meeting and its complete five-person state stay in memory. Continue playing,
-then use **Menu → Export playtest** to download the current complete run.
-That download can be imported through ordinary Lab tools or opened in file mode.
+then use **Menu → Debug → Export playtest** to download the current complete run.
+That download can be imported through ordinary Replay tools or opened in file mode.
 Download before closing: reloading or closing the tab loses undownloaded play.
 **Choose another file** keeps the last accepted meeting until a new file passes
 full replay. Canceling or rejecting a file keeps that meeting available.
@@ -129,7 +129,7 @@ temporary tab-only recording control. This informational notice does not claim
 the ordinary notice key. The existing feedback buttons explicitly submit notes;
 selecting them is not a local preview.
 
-An agent can explicitly open `?file=1&labRunSource=agent`. The public SDK marker
+An agent can explicitly open `/file?labRunSource=agent`. The public SDK marker
 labels newly captured linked records; it does not change imported authorship,
 turn recording on, change prior queued records or prove delivery. File mode
 makes no fictional-person Shelf request. Pending recording is retained until

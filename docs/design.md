@@ -52,7 +52,7 @@ Ferda, 50, is Nuri's daughter and the prospective tenant. She has managed clothi
 
 At 360×690, the game is a tailor's work surface: charcoal cloth, a cream ledger leaf with a red ruled margin, large serif text, chalk-white action lines and a vermilion seal on an agreement. The current speaker and claim appear before choices. One decision surface appears at a time. Every action shows its minute cost; the agreement also shows the minutes needed for the remaining signatures. The notebook is a separate view with a Back control. No dashboard, grid of statistics or plain document page. At desktop the ledger lies across the cloth with generous margins; the reading measure remains narrow. System serif and monospace fonts avoid a network font dependency. Keyboard focus and reduced-motion behavior remain visible.
 
-Feedback includes “I'm stopping” and “I'm confused” using the lab client transport. First visit states what recording does and offers one off switch. Replay import, seed and state tools appear only with ?lab=1. Ordinary play has notebook, menu, feedback and new game.
+Feedback includes “I'm stopping” and “I'm confused” using the lab client transport. First visit states what recording does and offers one off switch. Replay import, seed, state hash and export sit in one collapsed Debug item beside Recording and privacy. Every player can open it. Menu also offers Open a file at `/file`, which continues a complete current export without replacing the browser save. Ordinary play has notebook, menu, feedback and new game.
 
 ## Human Framework 4.0 (2026-10-27)
 

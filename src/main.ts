@@ -6,12 +6,11 @@ import './style.css';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('The reading surface is missing.');
 const root = app;
-const fileMode = new URLSearchParams(location.search).get('file') === '1';
+const fileMode = location.pathname.replace(/\/$/, '') === '/file';
 const lab = createLab({ game: 'word', ...(fileMode ? { preservation: 'preserve' as const } : {}) });
 const selection = new NativeFileSelection();
 let acceptedFile: AcceptedNativeFile | null = null;
 let stopTracking: (() => void) | null = null;
-const isLab = new URLSearchParams(location.search).get('lab') === '1';
 const saveKey = 'his-word-save-v1';
 const noticeKey = 'his-word-notice-v1';
 function read(key: string): string | null {
@@ -148,7 +147,6 @@ function menu(leaf: HTMLElement): void {
     button('Resume', () => change('play')),
     button('Notebook', () => change('notebook')),
     button('Feedback', () => change('feedback')),
-    button('Export playtest', download),
     ...(fileMode
       ? [button('Choose another file', () => change('file')), button('Close file', closeFile)]
       : [button('New game', () => change('new'))]),
@@ -170,14 +168,23 @@ function menu(leaf: HTMLElement): void {
   const all = element('a', 'All games');
   all.href = 'https://human.adamwhite.work/games/';
   options.append(all);
-  if (isLab && !fileMode) options.append(button('Lab tools', () => change('lab')));
+  if (!fileMode) {
+    const openFile = element('a', 'Open a file');
+    openFile.href = '/file';
+    options.append(openFile);
+  }
   leaf.append(options, recording());
   if (fileMode) leaf.append(paragraph(recordingStatus()));
   const privacy = element('a', 'Recording and privacy');
   privacy.href = PRIVACY_URL;
   privacy.target = '_blank';
   privacy.rel = 'noopener';
-  leaf.append(privacy);
+  const footer = element('div', '', 'menu-footer');
+  const debug = element('details');
+  debug.append(element('summary', 'Debug'), button('Export playtest', download));
+  if (!fileMode) debug.append(button('Replay tools', () => change('lab')));
+  footer.append(privacy, debug);
+  leaf.append(footer);
 }
 
 function recordingStatus(): string {
@@ -465,7 +472,7 @@ function render(focus = true): void {
     leaf.append(button('Return to the table', () => change('play'), 'text-button'));
   } else if (surface === 'lab' && !fileMode) {
     leaf.append(
-      heading('Lab tools'),
+      heading('Replay tools'),
       paragraph(`Seed: ${meeting.seed}`),
       paragraph(`Final state hash: ${hashState(meeting)}`),
     );

@@ -432,3 +432,15 @@ body[data-surface="notice"] .choice {
   line-height: 1.5;
   color: #514c41;
 }
+
+.menu-footer {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+.menu-footer details button {
+  display: block;
+}
+.menu-footer summary {
+  cursor: pointer;
+}
