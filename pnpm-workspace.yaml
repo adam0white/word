@@ -15,6 +15,5 @@ allowBuilds:
   workerd@1.20261019.1: true
   fsevents: false
 overrides:
-  "@adam0white/human-framework": 3.2.0
   vite: 8.3.5
   miniflare>undici: 7.30.1

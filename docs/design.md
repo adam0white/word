@@ -24,17 +24,17 @@ The new bargaining and delivery-round timing are host-authored rules. They do no
 
 ## Iteration 3 discoverability correction
 
-Smaller service and trial lease offers are visible from the first agreement menu. The late service still requires the clothing-order letter. Ferda’s refusal points to those offers and tells the player to ask Osman about rent. Osman must explicitly offer the trial lease in conversation before it can receive his signature. Each agreement records the concessions already discussed; after a new conversation the player must write a new agreement and collect every signature again. The agreement menu and Osman’s refusal explain that step. A screen-only cold policy tests asking first and recovering after the full-shop refusal. It receives displayed prose, choice labels and its own choice history, without actor or agreement state. Both approaches must win across 32 seeds and replay exactly, with the same policy also driven from browser text. It is a scripted discoverability check, not evidence that every human will discover the solution. Content edition `word-3` rejects older replay inputs because the visible choice list has changed.
+Smaller service and trial lease offers are visible from the first agreement menu. The late service still requires the clothing-order letter. Ferda’s refusal points to those offers and tells the player to ask Osman about rent. Osman must explicitly offer the trial lease in conversation before it can receive his signature. Each agreement records the concessions already discussed; after a new conversation the player must write a new agreement and collect every signature again. The agreement menu and Osman’s refusal explain that step. A screen-only cold policy tests asking first and recovering after the full-shop refusal. It receives displayed prose, choice labels and its own choice history, without actor or agreement state. Both approaches must win across 32 seeds and replay exactly, with the same policy also driven from browser text. It is a scripted discoverability check, not evidence that every human will discover the solution. Content edition `word-3` rejected older replay inputs because the visible choice list changed; the current edition is `word-5` (see Human Framework 4.0 below).
 
 ## Iteration 4 agreement preview
 
-Each agreement choice shows the exact hours, cart location, lease, fund contribution and two-minute writing cost before selection. A single pure draft calculation supplies both the preview and the agreement that people sign. Asking Halil changes the preview from no paid break to a paid break; asking Rıza changes the cart arrangement. Unasked acceptance is explicitly unknown. Conversations and earlier refusals establish known conditions. A known refusal or an unaffordable contribution appears before writing. Choosing a warned draft still costs two minutes; reading previews costs nothing. The clock, money and consent rules remain unchanged. Careless retries without interviews must still lose. Cold-policy wins measure discoverability of a solution, not human difficulty. Choice indices and state behavior stay compatible with word-3 exports.
+Each agreement choice shows the exact hours, cart location, lease, fund contribution and two-minute writing cost before selection. A single pure draft calculation supplies both the preview and the agreement that people sign. Asking Halil changes the preview from no paid break to a paid break; asking Rıza changes the cart arrangement. Unasked acceptance is explicitly unknown. Conversations and earlier refusals establish known conditions. A known refusal or an unaffordable contribution appears before writing. Choosing a warned draft still costs two minutes; reading previews costs nothing. The clock, money and consent rules remain unchanged. Careless retries without interviews must still lose. Cold-policy wins measure discoverability of a solution, not human difficulty. The word-3 choice indices were kept, but the current `word-5` edition accepts no earlier export.
 
 ## Technology and boundaries
 
-Ink through inkjs authors framing and one set of choices at a time. Strict TypeScript holds the host state and the published HF 3.2.0 actors. No React, panels, canvas, server or database. Ink external functions only read cached host projections. Input handlers apply each command once, outside Ink evaluation. Ink never calls converse, perceive, contradicted or a host reducer. Replay reconstructs the initial actors from a seed and replays the input log, including Ink choice paths. Export pins content edition, HF pin, cast data, complete state and final hash. No Ink randomness is used.
+Ink through inkjs authors framing and one set of choices at a time. Strict TypeScript holds the host state and one published HF 4.0.0 run. No React, panels, canvas, server or database. Ink external functions only read cached host projections. Input handlers apply each command once, outside Ink evaluation. Ink never calls HF `step` or a host reducer. Replay reconstructs the initial actors from a seed and replays the input log, including Ink choice paths. Export pins content edition, HF pin, cast data, complete state and final hash. No Ink randomness is used.
 
-HF owns actors, testimony, belief sources and trust changes. The host authors practical consent conditions and an immutable agreement protocol. Consent is an explicit host assumption, not an HF persuasion prediction: requirements must be met, comparisons depend on presence, and each living signatory consents to the exact agreement id. Changing the agreement clears consents. Duplicate signing is a no-op. No home-grown memory drift, trust formula or actor psychology enters the host. Replies use the actor's current HF belief values and trust rather than a fixed line for each person. No enableRetellingDrift in this slice.
+HF owns actors, testimony, belief sources and trust changes. The host authors practical consent conditions and an immutable agreement protocol. Consent is an explicit host assumption, not an HF persuasion prediction: requirements must be met, comparisons depend on presence, and each living signatory consents to the exact agreement id. Changing the agreement clears consents. Duplicate signing is a no-op. No home-grown memory drift, trust formula or actor psychology enters the host. Replies use the actor's current HF belief values and trust rather than a fixed line for each person. Retelling drift and audience-tuned telling are not part of this game; they are HF 4.1 work.
 
 ## Review decisions
 
@@ -54,9 +54,50 @@ At 360×690, the game is a tailor's work surface: charcoal cloth, a cream ledger
 
 Feedback includes “I'm stopping” and “I'm confused” using the lab client transport. First visit states what recording does and offers one off switch. Replay import, seed and state tools appear only with ?lab=1. Ordinary play has notebook, menu, feedback and new game.
 
+## Human Framework 4.0 (2026-10-27)
+
+HF is pinned to exactly 4.0.0 from 2026-10-27, content edition `word-5`. HF 3.x
+exports and saves are refused before any state changes, with a start-fresh
+message. They are not migrated.
+
+- **Run.** One HF run holds Halil, Rıza, Osman, Ferda and the nephew. Their
+  starting beliefs come from Nuri, the ledger and Ferda’s opening budget. The
+  host clock is the appointment clock: 10:00 with 24 minutes, one minute per
+  minute spent. HF time advances only to the host time already reached.
+- **Asking.** Each ask is a `conversation.requested` input. The host answers
+  each world-required communication request exactly once. Every item is
+  delivered, and the nephew hears it at full attention. Each heard claim is
+  turned into speech once. HF 4.0 exposes no action request this game can
+  resolve; an action request stops the run with an error.
+- **Letters and private words.** These are observation inputs carrying their
+  source and attention: Ferda reads the supplier’s letter as `saw`, with source
+  `supplier-letter`. Halil and Rıza are `told` by the nephew. No belief is
+  written into a person after the run starts.
+- **Comparison and confession.** When Halil and Rıza compare, each receives a
+  contradiction naming the other as reporter. A confession reaches each man
+  told as a contradiction with no reporter. The game does not infer who passed
+  it on. Discovered deceit and signing are social inputs.
+- **Host-owned.** Agreements, consent conditions, cash, presence, timing and
+  the month-later outcome stay in the host. HF never decides who signs.
+- **Reading.** Speech uses the claims HF chose. The ending reads relationships
+  through `inspect`. Source trust and applied contradictions are read from the
+  run export, because 4.0.0 `inspect` does not expose source trust.
+- **Not in 4.0.** Retelling drift and audience tuning are 4.1 work. 4.0 does
+  not deliver them here.
+
+Before writing an agreement, the preview states what is known and what is not.
+
+| Known before writing                                         | Unknown before writing                                   |
+| ------------------------------------------------------------ | -------------------------------------------------------- |
+| The exact terms: hours, cart place, lease and fee waivers    | Whether someone not yet asked will accept                |
+| The total from the ₺100 fund, with any deposit               | Any person’s private belief, trust or relationship value |
+| That writing costs 2 minutes, even if someone refuses        |                                                          |
+| Rıza’s delivery round, from 18 to 10 minutes left            |                                                          |
+| Every condition learned by asking, and every earlier refusal |                                                          |
+
 ## Deferred
 
 - 2026-11-03: owner acceptance after lab round 1 and retest. Coordinator owns panel scheduling and central site deployment.
-- 2026-11-15: audience-tuned retelling and rehearsal confidence, only after an opt-in HF release and the named headless control. Request in V3-COORDINATION.md.
+- 2026-11-15: audience-tuned retelling and rehearsal confidence are HF 4.1 work; HF 4.0 does not deliver them. Adopt them after that release and the named headless control. Request in V3-COORDINATION.md.
 - 2026-11-03: consider continuous event time after reading-speed feedback. First slice advances the appointment through costly choices.
 - 2026-11-15: cross-game actor continuation needs a receiving contract for this tenancy and work arrangement. First slice is explicitly fresh, not an imported continuation.

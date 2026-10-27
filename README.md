@@ -43,12 +43,25 @@ current place. Browser storage keeps your place when available.
 
 ## What Human Framework supplies
 
-[Human Framework](https://human.adamwhite.work) is pinned to **3.2.0**.
-This game demonstrates testimony with sources, learned beliefs, changes in trust
-in a source, and relationships. Conversations use current HF beliefs and trust.
-The letter changes Ferda’s belief about the order. Contradictions and confession
-supply HF evidence; conversations, discovered deceit and signing affect HF
-relationships. The later greetings read source trust and relationship state.
+[Human Framework](https://human.adamwhite.work) is pinned to exactly **4.0.0**
+(since 2026-10-27; registry integrity
+`sha512-8jqvoc25pw1psbiAZnsRH2LfbxhcJ8y3+qhj9L75/qtZOJtqKmnW+eSVfL/pg0QChY3RaSENdkA0DjAiquvu5w==`).
+The game is a 4.0 host: it creates one HF run with five people and sends every
+change as a timed input to `step`. It reads people back only through `inspect`
+and the run export. This game demonstrates testimony with sources, learned
+beliefs, changes in trust in a source, and relationships.
+
+- Asking someone is a `conversation.requested` input. HF chooses what they say
+  from their current beliefs and trust. The host answers each communication
+  request exactly once, and the nephew hears every item at full attention.
+- The supplier’s letter reaches Ferda as an observation that she read, with its
+  source and confidence. A private word reaches Halil or Rıza as an observation
+  told by the nephew. No belief is written into a person after the run starts.
+- A comparison between Halil and Rıza is a contradiction input that names the
+  other man as reporter. A confession is a contradiction with no reporter,
+  because the game does not know who first passes it on. Discovered deceit and
+  signing are social inputs that change HF relationships.
+- The later greetings read source trust and relationships.
 
 The host authors the practical arrangements, concessions, presence, money,
 deadline, signature rules and month-later work and rent outcomes. Consent means
@@ -61,7 +74,9 @@ general autonomous simulation. It starts fresh people, with no imported saves.
 **Export playtest** downloads the seed, input log, complete state, edition and
 HF pin. Open `?lab=1`, then **Menu → Lab tools → Import a playtest export** to
 reconstruct a run and check its state and hash. **Resume replay** returns to play.
-Only the current `word-4` edition with HF 3.2.0 is accepted.
+Only the current `word-5` edition with HF 4.0.0 is accepted. An earlier export
+or save, including every HF 3 run, is refused before any state changes, with a
+message to start a fresh meeting. Old saves are not migrated.
 
 The client is pinned to **@adam0white/lab-client 0.4.15**, the vendored artifact
 `vendor/adam0white-lab-client-0.4.15.tgz` (SHA-256

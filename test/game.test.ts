@@ -1,6 +1,7 @@
-import { relationshipWith, trustOf } from '@adam0white/human-framework';
+import { replay } from '@adam0white/human-framework';
 import { describe, expect, it } from 'vitest';
-import { act, createGame, exportRun, hashState, replayRun, view } from '../src/game';
+import { act, createGame, exportRun, hashState, reading, replayRun, view } from '../src/game';
+import { expectReplay } from './support/replay';
 
 function choose(s: ReturnType<typeof createGame>, text: string) {
   const c = view(s).choices.find((x) => x.text.includes(text));
@@ -45,7 +46,7 @@ it('answers a repeated refusal as a person, varied by seed and exact on replay',
     expect(screen.prose.join(' ')).toContain('Ferda has refused this agreement');
     expect(screen.prose.join(' ')).not.toContain('minutes needed');
     expect(screen.choices.find((c) => c.text.includes('next person'))?.text).toContain('Ferda has refused');
-    expect(replayRun(JSON.parse(JSON.stringify(exportRun(s))))).toEqual(s);
+    expectReplay(s);
   }
   expect(lines.size).toBeGreaterThan(3);
 });
@@ -95,7 +96,7 @@ describe('iteration two bargaining', () => {
     sign(s);
     expect(s.result).toBe('win');
     expect(s.spent).toBe(100);
-    expect(replayRun(exportRun(s))).toEqual(s);
+    expectReplay(s);
   });
   it('lets all four conversations and the letter produce an affordable agreement in time', () => {
     const s = start();
@@ -108,7 +109,7 @@ describe('iteration two bargaining', () => {
     expect(s.result).toBe('win');
     expect(s.spent).toBe(40);
     expect(s.remaining).toBe(4);
-    expect(replayRun(exportRun(s))).toEqual(s);
+    expectReplay(s);
   });
 });
 
@@ -127,7 +128,7 @@ describe('complete negotiation', () => {
     expect(s.spent).toBe(100);
     const run = exportRun(s);
     expect(hashState(replayRun(JSON.parse(JSON.stringify(run))))).toBe(hashState(s));
-    expect(replayRun(run)).toEqual(s);
+    expectReplay(s);
   });
   it('offers a costly letter route with a cheaper late service and no surprise reversal', () => {
     const s = start(7);
@@ -153,15 +154,15 @@ describe('complete negotiation', () => {
     expect(s.proposal?.cost).toBe(0);
     choose(s, 'next person');
     expect(s.caught).toBe(true);
-    expect(trustOf(s.people.halil, 'nephew')).toBeLessThan(0.8);
-    expect(trustOf(s.people.riza, 'nephew')).toBeLessThan(0.8);
+    expect(reading(s, 'halil').sourceTrust).toBeLessThan(0.8);
+    expect(reading(s, 'riza').sourceTrust).toBeLessThan(0.8);
     expect(s.result).toBe('playing');
     choose(s, 'Write an agreement');
     choose(s, 'Morning work. Smaller');
     sign(s);
     expect(s.result).toBe('win');
     expect(s.spent).toBe(100);
-    expect(replayRun(exportRun(s))).toEqual(s);
+    expectReplay(s);
   });
   it('clears signatures on a counterproposal and ends a failed meeting', () => {
     const s = start();
@@ -175,7 +176,7 @@ describe('complete negotiation', () => {
     expect(s.proposal?.consents).toEqual([]);
     choose(s, 'End the meeting');
     expect(s.result).toBe('loss');
-    expect(replayRun(exportRun(s))).toEqual(s);
+    expectReplay(s);
   });
   it('cancels an incomplete shared agreement after late comparison and lets the player recover', () => {
     const s = start();
@@ -210,7 +211,7 @@ describe('complete negotiation', () => {
     expect(s.spent).toBe(100);
     expect(s.remaining).toBe(1);
     expect(view(s).prose.join(' ')).toContain('check every detail');
-    expect(replayRun(exportRun(s))).toEqual(s);
+    expectReplay(s);
   });
   it('also replaces an incomplete honest agreement when comparison reveals the earlier lies', () => {
     const s = start();
@@ -270,12 +271,12 @@ describe('complete negotiation', () => {
     choose(s, 'in private');
     choose(s, 'Withdraw your');
     for (const who of ['halil', 'riza'] as const) {
-      expect(trustOf(s.people[who], 'nephew')).toBeLessThan(0.8);
-      expect(relationshipWith(s.people[who], 'nephew').trust).toBeLessThan(0.5);
+      expect(reading(s, who).sourceTrust).toBeLessThan(0.8);
+      expect(reading(s, who).tie?.trust).toBeLessThan(0.5);
     }
     choose(s, 'Let Osman leave');
     expect(view(s).prose.join(' ')).toContain('check every detail');
-    expect(replayRun(exportRun(s))).toEqual(s);
+    expectReplay(s);
   });
   it('can avoid comparison by releasing Halil after his signed fee waiver', () => {
     const s = start();
@@ -295,8 +296,8 @@ describe('complete negotiation', () => {
     expect(s.result).toBe('win');
     expect(s.spent).toBe(0);
     expect(s.caught).toBe(false);
-    expect(trustOf(s.people.halil, 'nephew')).toBe(0.8);
-    expect(replayRun(exportRun(s))).toEqual(s);
+    expect(reading(s, 'halil').sourceTrust).toBe(0.8);
+    expectReplay(s);
   });
   it('does not turn all questions into automatic consent to unsuitable terms', () => {
     const s = start();
@@ -323,7 +324,7 @@ describe('complete negotiation', () => {
     sign(s);
     expect(s.result).toBe('win');
     expect(s.remaining).toBe(0);
-    expect(replayRun(exportRun(s))).toEqual(s);
+    expectReplay(s);
   });
   it('ends a refused final signature at the deadline', () => {
     const s = start();
@@ -371,7 +372,7 @@ describe('complete negotiation', () => {
       choose(s, 'Hear what');
       choose(s, 'Return to the table');
     }
-    expect(replayRun(exportRun(s))).toEqual(s);
+    expectReplay(s);
   });
   it('Ferda acknowledges the order after the letter arrives', () => {
     const s = start();
@@ -393,7 +394,7 @@ describe('complete negotiation', () => {
     sign(s);
     expect(s.result).toBe('win');
     expect(s.remaining).toBe(4);
-    expect(replayRun(exportRun(s))).toEqual(s);
+    expectReplay(s);
   });
 });
 
@@ -439,7 +440,7 @@ describe('agreement previews before writing', () => {
     choose(s, 'smaller late service');
     expect(offer?.text).toContain(s.proposal?.terms);
     expect(s.remaining).toBe(16);
-    expect(replayRun(exportRun(s))).toEqual(s);
+    expectReplay(s);
   });
   it('previews asked concessions and known full-lease refusal', () => {
     const s = start();
@@ -482,5 +483,68 @@ describe('agreement previews before writing', () => {
     choose(s, 'Let Osman leave');
     expect(view(s).prose.join(' ')).not.toContain('ask you to sit');
     expect(view(s).prose.join(' ')).not.toContain('asks you to sit');
+  });
+});
+
+describe('HF 4.0 host contract', () => {
+  it('refuses a His Word 3.x export before building any run, with a start-fresh message', () => {
+    const old = {
+      game: 'word',
+      edition: 'word-4',
+      framework: '3.2.0',
+      seed: 1,
+      inputs: [],
+      state: {},
+      hash: '0',
+    };
+    expect(() => replayRun(old)).toThrow(/earlier version of His Word.*Start a fresh game/);
+    const current = exportRun(start());
+    expect(() => replayRun({ ...current, archive: { ...current.archive, version: 3 } })).toThrow(
+      /earlier version/,
+    );
+  });
+  it('resolves each conversation request once and lets HF replay the archive exactly', () => {
+    const s = start();
+    askAll(s);
+    choose(s, 'Fetch Nuri');
+    const { archive } = exportRun(s);
+    const settled = archive.current.receipts.communications.map((c) => c.requestId);
+    expect(settled).toHaveLength(4);
+    expect(new Set(settled).size).toBe(4);
+    const inputs = archive.history.flatMap((t) => t.inputs);
+    expect(inputs.filter((i) => i.kind === 'conversation.requested')).toHaveLength(4);
+    expect(inputs.filter((i) => i.kind === 'communication.resolved')).toHaveLength(4);
+    const verified = replay(archive);
+    expect(verified.ok && verified.value.verified && verified.value.fullHash).toBe(archive.hashes.full);
+  });
+  it('delivers the letter and private word as attended inputs with their source, never as written beliefs', () => {
+    const s = start();
+    choose(s, 'in private');
+    choose(s, 'Tell Halil');
+    choose(s, 'Fetch Nuri');
+    const inputs = exportRun(s).archive.history.flatMap((t) => t.inputs);
+    const percepts = inputs.flatMap((i) => (i.kind === 'observation.received' ? i.payload.percepts : []));
+    expect(percepts.map((p) => [p.channel, p.provenance])).toEqual([
+      ['told', ['nephew']],
+      ['saw', ['supplier-letter']],
+    ]);
+    expect(percepts[0]?.actorId).toBe('nephew');
+    expect(inputs.some((i) => i.kind === 'person.arrived' || i.kind === 'testimony.received')).toBe(false);
+    choose(s, 'Hear what');
+    choose(s, 'Ask Ferda');
+    expect(view(s).speech).toContain('order pays');
+  });
+  it('sends a confession with no inferred reporter', () => {
+    const s = start();
+    choose(s, 'in private');
+    choose(s, 'Tell Halil');
+    choose(s, 'in private');
+    choose(s, 'Withdraw your');
+    const contradictions = exportRun(s)
+      .archive.history.flatMap((t) => t.inputs)
+      .flatMap((i) => (i.kind === 'contradiction.received' ? [i.payload] : []));
+    expect(contradictions).toHaveLength(1);
+    expect(contradictions[0]).not.toHaveProperty('reporterId');
+    expect(reading(s, 'halil').sourceTrust).toBeLessThan(0.8);
   });
 });

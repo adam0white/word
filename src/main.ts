@@ -27,17 +27,19 @@ function freshSeed(): number {
   return crypto.getRandomValues(new Uint32Array(1))[0] ?? 1;
 }
 let state = createGame(freshSeed());
+let status = '';
 const saved = read(saveKey);
 if (saved) {
   try {
     state = replayRun(JSON.parse(saved));
   } catch {
-    /* An older save must not prevent a new run. */
+    // An older or damaged save is refused, not repaired; say so and start fresh.
+    status =
+      'Your saved meeting could not be replayed in this version of His Word, so a fresh meeting has started.';
   }
 }
 type Surface = 'play' | 'menu' | 'notebook' | 'feedback' | 'new' | 'notice' | 'lab';
 let surface: Surface = read(noticeKey) ? 'play' : 'notice';
-let status = '';
 let feedbackBusy = false;
 lab.trackRun(() => exportRun(state), { runKey: () => state.seed });
 
@@ -321,8 +323,8 @@ function render(focus = true): void {
           status = `Replay verified. Final hash: ${hashState(state)}`;
           render(false);
         })
-        .catch(() => {
-          status = 'This export could not be replayed. Your current meeting is kept.';
+        .catch((error: unknown) => {
+          status = `This export could not be replayed. ${error instanceof Error ? `${error.message} ` : ''}Your current meeting is kept.`;
           render(false);
         });
     });
