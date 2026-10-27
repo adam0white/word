@@ -9,7 +9,7 @@ Your uncle Nuri died last week. His shop is shut. Four people have come to decid
 He promised Halil morning repair work. He promised Rıza space for a delivery cart on the same floor. Both heard him clearly.
 Osman owns the room. He leaves in twenty-four minutes to meet another tenant. Ferda has not decided whether to take the lease.
 Nuri left a letter about a clothing order at the depot. Fetching it takes six minutes.
-You have ₺100 for your journey home. You can spend it to make an agreement work.
+You have ₺100 (100 Turkish lira) for your journey home. You can spend it to make an agreement work.
 * [Put the notebook on the table. (0 minutes)]
   @start
   -> END
@@ -19,7 +19,7 @@ Everyone must sign one agreement on work, storage and rent. Ask what they need a
 * [Hear what someone needs. (0 minutes)]
   @hear
   -> END
-* {not flag("letter")} [Fetch Nuri's letter. (6 minutes)]
+* {not flag("letter")} [Fetch Nuri’s letter. (6 minutes)]
   @letter
   -> END
 * [Write an agreement.{flag("halil_left"): Call Halil back. (2 minutes)| (0 minutes)}]
@@ -53,7 +53,7 @@ A conversation takes two minutes. You can ask again after something changes.
 === offer ===
 Writing an agreement takes two minutes. Each signature takes one more minute.
 For a trial lease, ask Osman about rent before writing the agreement. After a conversation changes the terms, write a new agreement for everyone to sign.
-{flag("caught"):They require a ₺40 deposit after your conflicting accounts.}
+{flag("caught"):Everyone now asks for a ₺40 deposit, because your private word proved false.}
 * [Morning work. Rent an outside cart space. Full shop lease. (2 minutes){preview("morning")}]
   @morning
   -> END
@@ -87,7 +87,7 @@ A private promise may persuade someone to waive a ₺40 guarantee for sharing th
 * {not flag("told_riza") && not flag("away")} [Tell Rıza: “The floor is not reserved for morning work. Everyone agreed.” (2 minutes)]
   @tell_riza
   -> END
-* {flag("told_halil") || flag("told_riza")} [Withdraw your private promises in front of everyone. Add a ₺40 deposit. (2 minutes)]
+* {flag("told_halil") || flag("told_riza")} [Withdraw your private word in writing. Add a ₺40 deposit. (2 minutes)]
   @disclose
   -> END
 * [Return to the table. (0 minutes)]
@@ -116,7 +116,6 @@ The agreement stays on the table. Each person reads the same marked spaces, hour
   -> END
 
 === ending ===
-One month later.
 * [Close the notebook. (0 minutes)]
   @close
   -> END

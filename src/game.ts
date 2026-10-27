@@ -192,6 +192,11 @@ function ink(s: GameState) {
   return { story, prose };
 }
 
+/** "Halil", "Halil and Rıza", "Halil, Rıza and Osman". */
+function names(list: string[]): string {
+  return list.length < 2 ? (list[0] ?? '') : `${list.slice(0, -1).join(', ')} and ${list.at(-1)}`;
+}
+
 function relationshipEnding(s: GameState): string[] {
   const wary: string[] = [];
   const warm: string[] = [];
@@ -204,12 +209,12 @@ function relationshipEnding(s: GameState): string[] {
   return [
     ...(warm.length && s.result === 'win'
       ? [
-          `${warm.join(', ')} ${warm.length === 1 ? 'greets' : 'greet'} you and ${warm.length === 1 ? 'asks' : 'ask'} you to sit.`,
+          `${names(warm)} ${warm.length === 1 ? 'greets' : 'greet'} you and ${warm.length === 1 ? 'asks' : 'ask'} you to sit.`,
         ]
       : []),
     ...(wary.length
       ? [
-          `${wary.join(', ')} ${wary.length === 1 ? 'checks' : 'check'} every detail with you. Any future agreement must be in writing.`,
+          `${names(wary)} ${wary.length === 1 ? 'checks' : 'check'} every detail with you. Any future agreement must be in writing.`,
         ]
       : []),
   ];
@@ -229,8 +234,8 @@ export function view(s: GameState): {
     const after =
       s.result === 'win'
         ? [
-            `The shop is open. ${terms}`,
-            `Ferda paid the agreed rent. Halil completed the ${s.proposal?.kind === 'late' ? 'late' : 'morning'} shifts. Rıza kept the agreed storage hours.`,
+            `The shop is open. The agreement read: ${terms}`,
+            `Ferda paid the agreed rent. ${s.proposal?.kind === 'shared' ? 'Halil kept to his small repairs on the marked bench.' : `Halil completed the ${s.proposal?.kind === 'late' ? 'late' : 'morning'} shifts.`} Rıza kept the agreed storage hours.`,
             `Your contribution was ₺${s.spent}. ${s.spent === 100 ? 'You took the overnight coach home instead of your train.' : 'You kept enough for the train home.'}`,
             ...relationshipEnding(s),
             s.proposal?.kind === 'late' &&
@@ -241,7 +246,7 @@ export function view(s: GameState): {
               : 'Ferda chooses to keep the service small.',
           ]
         : [
-            'Osman rented the room to someone else. Ferda returned the keys.',
+            'Osman rented the room to someone else. Ferda did not take the lease.',
             'Halil went back to his own rented workshop. The extra job did not begin. Rıza still brings his cart home each day.',
             'No one signed an agreement they could not keep. You can try the meeting again.',
             ...relationshipEnding(s),
@@ -397,7 +402,9 @@ function agreementDraft(
     kind === 'late' && !s.letter
       ? 'Ferda needs the clothing order before she can fund late work. Fetch the letter.'
       : kind === 'shared' && (s.told.halil === undefined || s.told.riza === undefined || s.caught)
-        ? 'Halil wants a ₺40 guarantee before he will accept a smaller repair space. Speak to both men or choose another agreement.'
+        ? s.caught
+          ? 'After your false private word, neither man will waive his ₺40 guarantee. Choose another agreement.'
+          : 'Halil wants a ₺40 guarantee before he will accept a smaller repair space. Speak to both men in private, or choose another agreement.'
         : null;
   const deposit = s.caught ? 40 : 0;
   const cost =
@@ -406,10 +413,10 @@ function agreementDraft(
   const concessions = [...s.asked];
   const terms =
     kind === 'shared'
-      ? 'Halil does small repairs on the marked bench. Rıza keeps his cart in the marked bay. Ferda runs the agreed service. Both men waive their ₺40 guarantees. The smaller service covers rent. You pay nothing.'
+      ? `Halil does small repairs on the marked bench. Rıza keeps his cart in the marked bay. Ferda runs the agreed service. Both men waive their ₺40 guarantees. The ${smaller ? 'smaller ' : ''}service covers rent. You pay nothing.`
       : kind === 'morning'
         ? `Halil works mornings on a clear floor. Rıza stores his cart ${smaller && concessions.includes('riza') ? 'in his own yard' : 'in rented outside space'}. You cover the rent gap${smaller && concessions.includes('riza') ? '' : ' and storage'}.`
-        : `Halil works five to nine on the clothing order${concessions.includes('halil') ? ', with a paid break' : ', without a paid break'}. Rıza ${concessions.includes('riza') ? 'takes his cart home at four' : 'keeps his cart inside overnight'}. You pay ₺40 for the first collection.`;
+        : `Halil works from five to nine in the evening on the clothing order${concessions.includes('halil') ? ', with a paid break' : ', without a paid break'}. Rıza ${concessions.includes('riza') ? 'takes his cart home at four' : 'keeps his cart inside overnight'}. You pay ₺40 for the first collection.`;
   const proposal: Proposal = {
     id: s.nextProposal,
     kind,
@@ -424,7 +431,13 @@ function agreementDraft(
     blocked:
       blocked ??
       (cost > 100
-        ? `This costs ₺${cost}, including the deposit. You have ₺100. The smaller late service costs less.`
+        ? `This costs ₺${cost}, including the deposit. You have ₺100. ${
+            kind === 'morning' && smaller && !s.asked.includes('riza')
+              ? 'Ask Rıza about his yard to lower the cost.'
+              : s.letter
+                ? 'The smaller late service costs less.'
+                : 'Nuri’s letter may offer cheaper late work.'
+          }`
         : null),
   };
 }
@@ -444,12 +457,12 @@ function agreementPreview(s: GameState, key: string): string {
     const reason = refusal(proposal, who);
     return reason ? [reason] : [];
   });
-  if (unknown.length) conditions.push(`${unknown.join(', ')}: acceptance unknown; ask before writing.`);
+  if (unknown.length) conditions.push(`${names(unknown)}: acceptance unknown; ask before writing.`);
   const terms =
     s.caught && kind === 'shared'
       ? proposal.terms.replace('You pay nothing.', 'The proposed fee waivers would cost nothing.')
       : proposal.terms;
-  return ` ${terms} Total from your fund: ₺${proposal.cost}. Writing costs 2 minutes even if refused. ${[blocked, ...conditions].filter(Boolean).join(' ')}`;
+  return ` ${terms} Total from your fund: ₺${proposal.cost}. Writing takes 2 minutes, even if someone then refuses. ${[blocked, ...conditions].filter(Boolean).join(' ')}`;
 }
 
 function propose(s: GameState, kind: Proposal['kind'], smaller = false) {
@@ -580,8 +593,10 @@ export function act(s: GameState, input: Input): void {
     }
     s.caught = true;
     s.proposal = null;
-    s.note =
-      'You write a correction for each man: your private promises were false. Rıza receives his on his delivery round. They will consider a new agreement with a ₺40 deposit.';
+    const told = (['halil', 'riza'] as const).filter((who) => s.told[who] !== undefined);
+    s.note = `You write a correction for ${names(told.map((who) => s.people[who].name))}: your private ${
+      told.length === 1 ? 'promise was' : 'promises were'
+    } false.${told.includes('riza') && away(s) ? ' Rıza receives his on his delivery round.' : ''} Everyone will consider a new agreement with a ₺40 deposit.`;
     record(s, s.note);
     return;
   }
@@ -613,8 +628,11 @@ export function act(s: GameState, input: Input): void {
     if (compared) {
       s.proposal = null;
       s.page = 'table';
-      s.note =
-        'Halil and Rıza compare what you told them. You promised each man the whole floor. They withdraw their fee waivers. A new agreement needs a ₺40 deposit paid today. Choose a new agreement. A smaller morning service with Rıza’s yard can fit your fund; the letter also supports late work.';
+      s.note = `Halil and Rıza compare what you told them. You promised each man the whole floor. They withdraw their fee waivers. A new agreement needs a ₺40 deposit paid today. Choose a new agreement. ${
+        s.asked.includes('riza')
+          ? 'A smaller morning service with Rıza’s yard can fit your fund.'
+          : 'Ask Rıza about his yard: a smaller morning service there can fit your fund.'
+      } ${s.letter ? 'The letter also supports late work.' : 'Nuri’s letter may support late work.'}`;
       if (s.remaining === 0) {
         s.result = 'loss';
         s.page = 'ending';
@@ -645,15 +663,18 @@ export function act(s: GameState, input: Input): void {
       magnitude: 0.7,
     });
     const reasons: Record<Who, string> = {
-      halil: 'The agreed shift gives him paid work on a clear floor.',
+      halil:
+        p.kind === 'shared'
+          ? 'The marked bench gives him paid repair work.'
+          : 'The agreed shift gives him paid work on a clear floor.',
       riza: 'The cart has a place for the hours he needs.',
       osman: 'The first month of the new rent is funded.',
       ferda: 'The work can pay. She chooses to take the new lease.',
     };
     s.note = `${compared ? 'Halil and Rıza compared your conflicting accounts. They now check everything in the agreement. ' : ''}${s.people[who].name} signs agreement ${p.id}. ${reasons[who]}`;
     record(s, s.note);
-    if (p.kind === 'shared' && p.consents.includes('halil'))
-      s.note += ' Halil has read the marked spaces and signed. Rıza must still agree to his own fee waiver.';
+    if (p.kind === 'shared' && who === 'halil' && !p.consents.includes('riza'))
+      s.note += ' He read the marked spaces first. Rıza must still agree to his own fee waiver.';
     s.page = 'signing';
     if (p.consents.length === ORDER.length) {
       s.spent = p.cost;
