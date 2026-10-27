@@ -27,7 +27,7 @@ type PerceptClaim = PerceptData['claims'][number];
 /** The part of HF's tie to the nephew that the ending reads. */
 type Tie = { trust: number; familiarity: number };
 
-import content from './story.json';
+import content from './story.json' with { type: 'json' };
 
 const EDITION = 'word-5';
 const HF = '4.0.0';
