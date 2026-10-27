@@ -61,7 +61,7 @@ general autonomous simulation. It starts fresh people, with no imported saves.
 **Export playtest** downloads the seed, input log, complete state, edition and
 HF pin. Open `?lab=1`, then **Menu → Lab tools → Import a playtest export** to
 reconstruct a run and check its state and hash. **Resume replay** returns to play.
-Only the current `word-3` edition with HF 3.2.0 is accepted.
+Only the current `word-4` edition with HF 3.2.0 is accepted.
 
 The client is pinned to **@adam0white/lab-client 0.4.11**, the vendored artifact
 `vendor/adam0white-lab-client-0.4.11.tgz` (SHA-256

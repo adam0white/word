@@ -19,7 +19,7 @@ import {
 import { Story } from 'inkjs';
 import content from './story.json';
 
-const EDITION = 'word-3';
+const EDITION = 'word-4';
 const HF = '3.2.0';
 const PROP = 'floor-reserved-for-morning-repairs';
 const ORDER = ['halil', 'riza', 'osman', 'ferda'] as const;
@@ -34,6 +34,8 @@ export type Proposal = {
   consents: Who[];
   smaller: boolean;
   concessions: Who[];
+  /** How many times each person has refused this agreement. A new agreement starts fresh. */
+  refusals?: Partial<Record<Who, number>>;
 };
 export type GameState = {
   edition: typeof EDITION;
@@ -183,6 +185,14 @@ function ink(s: GameState) {
   story.BindExternalFunction('remaining', () => s.remaining, true);
   story.BindExternalFunction('preview', (key: string) => agreementPreview(s, key), true);
   story.BindExternalFunction('flag', (key: string) => flag(s, key), true);
+  story.BindExternalFunction(
+    'refused_note',
+    () => {
+      const who = refusedNext(s);
+      return who ? ` ${s.people[who].name} has refused this agreement.` : '';
+    },
+    true,
+  );
   story.ChoosePathString(s.page);
   const prose: string[] = [];
   while (story.canContinue) {
@@ -272,17 +282,22 @@ export function view(s: GameState): {
     !s.proposal.consents.includes('riza') &&
     s.remaining > 10 &&
     s.remaining - (s.proposal.consents.includes('halil') ? 0 : 1) - 1 <= 18;
+  const refusedBy = refusedNext(s);
   const signingMinutes = s.proposal
     ? Math.max(4 - s.proposal.consents.length, deliveryWait ? s.remaining - 10 + 1 : 0)
     : 0;
   return {
     title: titles[s.page],
     prose: [
-      ...(s.page === 'signing' && s.proposal
+      ...(s.page === 'signing' && s.proposal && refusedBy
         ? [
-            `${signingMinutes} ${signingMinutes === 1 ? 'minute' : 'minutes'} needed for the remaining signatures${deliveryWait ? ' including the delivery wait' : ''}. ${s.remaining} ${s.remaining === 1 ? 'minute remains' : 'minutes remain'}.`,
+            `${s.people[refusedBy].name} has refused this agreement and will not sign it unless it changes. ${s.remaining} ${s.remaining === 1 ? 'minute remains' : 'minutes remain'}.`,
           ]
-        : []),
+        : s.page === 'signing' && s.proposal
+          ? [
+              `${signingMinutes} ${signingMinutes === 1 ? 'minute' : 'minutes'} needed for the remaining signatures${deliveryWait ? ' including the delivery wait' : ''}. ${s.remaining} ${s.remaining === 1 ? 'minute remains' : 'minutes remain'}.`,
+            ]
+          : []),
       s.note,
       ...(s.page === 'signing' && s.proposal && !s.note.includes(s.proposal.terms)
         ? [`${s.proposal.terms} Total from your fund: ₺${s.proposal.cost}.`]
@@ -479,6 +494,71 @@ function propose(s: GameState, kind: Proposal['kind'], smaller = false) {
   s.note = `${s.proposal.terms} Total from your fund: ₺${s.proposal.cost}.`;
   record(s, `Agreement ${s.proposal.id}: ${s.proposal.terms}`);
 }
+/** Asked again, a person answers as a person: shorter, then harder, then not at all.
+ * The first refusal keeps its full instruction. Later lines are chosen by seed, so a
+ * replay repeats them exactly. */
+const repeatedRefusals: Record<Who, [string[], string[], string[]]> = {
+  halil: [
+    [
+      'Halil does not pick up the pen. “I told you. Late work needs a paid break.”',
+      'Halil taps the line about late hours. “No paid break, no signature.”',
+    ],
+    [
+      'Halil folds the page and pushes it back. “Ask me about a change, or stop asking me to sign.”',
+      'Halil looks at Osman, not at you. “He keeps handing me the same page.”',
+    ],
+    ['Halil does not look up. He has already answered you.', 'Halil leaves the pen where it lies.'],
+  ],
+  riza: [
+    [
+      'Rıza taps the empty space. “Write down the cart at four. Then I sign.”',
+      'Rıza laughs, without warmth. “Four o’clock, on paper. That is all I asked.”',
+    ],
+    [
+      'Rıza stands up. “I will not sign a page that leaves my cart out. Ask me. Do not push me.”',
+      'Rıza turns to Osman. “Does he think I will forget by the third time?”',
+    ],
+    ['Rıza looks out at his cart. He does not answer.', 'Rıza shakes his head before you finish.'],
+  ],
+  osman: [
+    [
+      'Osman does not touch the pen. “No trial lease without my agreement. Ask me about rent.”',
+      'Osman checks his watch. “The trial lease is not agreed. Ask me first.”',
+    ],
+    [
+      'Osman closes his diary. “I have another tenant waiting. Ask me about rent, or let me go.”',
+      'Osman stands, then sits again. “Ask me. Do not wave the page at me.”',
+    ],
+    ['Osman checks his watch and says nothing.', 'Osman puts on his coat, but stays at the door.'],
+  ],
+  ferda: [
+    [
+      'Ferda reads it again and puts it down. “Full rent for a full service. I cannot.”',
+      'Ferda shakes her head. “A smaller service and a trial lease. I said so.”',
+    ],
+    [
+      'Ferda pushes the page back. “Change it, or I will not take the lease at all.”',
+      'Ferda looks at Osman. “Is there a smaller agreement, or not?”',
+    ],
+    [
+      'Ferda has stopped reading. She is waiting for a different agreement.',
+      'Ferda folds her hands on the table.',
+    ],
+  ],
+};
+function repeatedRefusal(s: GameState, p: Proposal, who: Who, times: number): string {
+  const [second, third, later] = repeatedRefusals[who];
+  const stage = times === 2 ? second : times === 3 ? third : later;
+  const pick =
+    Math.imul(s.seed ^ Math.imul(p.id, 0x9e3779b1) ^ Math.imul(times, 0x85ebca6b), 0xc2b2ae35) >>> 0;
+  return stage[pick % stage.length] ?? stage[0] ?? '';
+}
+/** The next signer when they have already refused this agreement. */
+function refusedNext(s: GameState): Who | undefined {
+  const p = s.proposal;
+  const next = p && ORDER.find((id) => !p.consents.includes(id) && (id !== 'riza' || !away(s)));
+  return next && p.refusals?.[next] ? next : undefined;
+}
 function refusal(p: Proposal, who: Who): string | null {
   if (who === 'halil' && p.kind === 'late' && !p.concessions.includes('halil'))
     return 'Halil refuses: late work needs a paid break. Ask him about a change.';
@@ -649,9 +729,11 @@ export function act(s: GameState, input: Input): void {
     }
     const reason = refusal(p, who);
     if (reason) {
-      s.note = reason;
+      const times = (p.refusals?.[who] ?? 0) + 1;
+      p.refusals = { ...p.refusals, [who]: times };
+      s.note = times === 1 ? reason : repeatedRefusal(s, p, who, times);
       s.page = 'signing';
-      record(s, reason);
+      record(s, s.note);
       return;
     }
     p.consents.push(who);

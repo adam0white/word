@@ -1,6 +1,7 @@
 EXTERNAL remaining()
 EXTERNAL flag(key)
 EXTERNAL preview(key)
+EXTERNAL refused_note()
 
 -> opening
 
@@ -96,7 +97,7 @@ A private promise may persuade someone to waive a ₺40 guarantee for sharing th
 
 === signing ===
 The agreement stays on the table. Each person reads the same marked spaces, hours and price. Changing it cancels every signature.
-* {not flag("waiting")} [Ask the next person to sign. (1 minute)]
+* {not flag("waiting")} [Ask the next person to sign.{refused_note()} (1 minute)]
   @sign
   -> END
 * {flag("waiting")} [Wait for Rıza to return. ({remaining() - 10} {remaining() == 11:minute|minutes})]

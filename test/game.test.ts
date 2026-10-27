@@ -26,6 +26,30 @@ function askAll(s: ReturnType<typeof createGame>) {
   }
 }
 
+it('answers a repeated refusal as a person, varied by seed and exact on replay', () => {
+  const lines = new Set<string>();
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const s = start(seed);
+    choose(s, 'Write an agreement');
+    choose(s, 'Rent an outside');
+    const notes: string[] = [];
+    for (let i = 0; i < 7 && s.result === 'playing'; i++) {
+      choose(s, 'next person');
+      notes.push(s.note);
+    }
+    const ferda = notes.filter((n) => n.includes('Ferda'));
+    expect(ferda[0]).toContain('Ferda refuses:');
+    expect(new Set(ferda.slice(0, 3)).size).toBe(3);
+    for (const n of ferda.slice(1)) lines.add(n);
+    const screen = view(s);
+    expect(screen.prose.join(' ')).toContain('Ferda has refused this agreement');
+    expect(screen.prose.join(' ')).not.toContain('minutes needed');
+    expect(screen.choices.find((c) => c.text.includes('next person'))?.text).toContain('Ferda has refused');
+    expect(replayRun(JSON.parse(JSON.stringify(exportRun(s))))).toEqual(s);
+  }
+  expect(lines.size).toBeGreaterThan(3);
+});
+
 describe('iteration two bargaining', () => {
   it('refuses the unexplored full lease rather than handing out signatures', () => {
     const s = start();
@@ -41,7 +65,7 @@ describe('iteration two bargaining', () => {
     choose(s, 'Write an agreement');
     choose(s, 'Rent an outside');
     sign(s);
-    expect(s.note).toContain('Ferda refuses');
+    expect(s.log.some((entry) => entry.text.startsWith('Ferda refuses:'))).toBe(true);
     choose(s, 'Hear what');
     choose(s, 'Ask Ferda');
     choose(s, 'Fetch Nuri');
