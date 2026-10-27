@@ -313,6 +313,8 @@ test('file meetings preserve occupied native storage and ordinary import still p
 // The real host must leave the SDK's async pagehide snapshot alive. Synthetic
 // receiver replies are test receipts only; every linked piece uses its exact id.
 test('pagehide captures the complete changed file meeting with the real SDK', async ({ page, baseURL }) => {
+  // One transport control. WebKit's Playwright protocol omits this beacon body.
+  test.skip(test.info().project.name !== 'phone-chromium', 'Inspect the compressed beacon once in Chromium.');
   const { gunzipSync } = await import('node:zlib');
   const { act, createGame, exportRun, view } = await import('../../src/game');
   const origin = 'https://word-file-test.invalid';
