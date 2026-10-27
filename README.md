@@ -63,9 +63,9 @@ HF pin. Open `?lab=1`, then **Menu → Lab tools → Import a playtest export** 
 reconstruct a run and check its state and hash. **Resume replay** returns to play.
 Only the current `word-4` edition with HF 3.2.0 is accepted.
 
-The client is pinned to **@adam0white/lab-client 0.4.11**, the vendored artifact
-`vendor/adam0white-lab-client-0.4.11.tgz` (SHA-256
-`914aef177bb3bab18d776b6813c2ae09c9e392ba990622b05723d68414228694`).
+The client is pinned to **@adam0white/lab-client 0.4.15**, the vendored artifact
+`vendor/adam0white-lab-client-0.4.15.tgz` (SHA-256
+`a317b83fdbf9239a9fea729d9ec7a95cf5b2c54d87d70d780148720a7e2a2eb7`).
 Recording attempts uploads of decisions, run snapshots and event/error logs.
 Use **Record my play for the lab** on first visit or in Menu to change it.
 Browser privacy signals default recording to off. **Feedback** offers
