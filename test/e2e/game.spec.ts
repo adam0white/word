@@ -176,3 +176,221 @@ test('draft choices show terms and costs before writing uses time', async ({ pag
   await expect(page.locator('main')).toContainText('with a paid break');
   await expect(page.locator('.eyebrow')).toContainText('14 minutes');
 });
+
+// This control fails if the file route reads/writes native keys, accepts stale
+// selection, or downloads a partial state. It uses only a fresh test context.
+test('file meetings preserve occupied native storage and ordinary import still persists', async ({
+  page,
+}) => {
+  const { act, createGame, exportRun, replayRun, view } = await import('../../src/game');
+  const source = createGame(42);
+  for (const text of ['Put the notebook', 'Hear what', 'Ask Halil', 'Fetch Nuri']) {
+    const selected = view(source).choices.find((item) => item.text.includes(text));
+    if (!selected) throw new Error(`Missing choice: ${text}`);
+    act(source, { choice: selected.id });
+  }
+  const original = exportRun(source);
+  await page.addInitScript(() => {
+    const save = 'his-word-save-v1';
+    const notice = 'his-word-notice-v1';
+    localStorage.setItem(save, 'occupied-native-meeting');
+    localStorage.setItem(notice, 'occupied-native-notice');
+    const trace: string[] = [];
+    const read = Storage.prototype.getItem;
+    const write = Storage.prototype.setItem;
+    Storage.prototype.getItem = function (key) {
+      if (key === save || key === notice) trace.push(`read:${key}`);
+      return read.call(this, key);
+    };
+    Storage.prototype.setItem = function (key, value) {
+      if (key === save || key === notice) trace.push(`write:${key}`);
+      return write.call(this, key, value);
+    };
+    Object.assign(window, { nativeTrace: trace });
+  });
+  await page.goto('/?file=1&lab=1&labRunSource=agent');
+  await expect(page.getByRole('heading', { name: 'Open a His Word file' })).toBeVisible();
+  await expect(page.getByText(/Recording is blocked/)).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: 'Record my play for the lab' })).toBeDisabled();
+  await expect(page.locator('[data-choice]')).toHaveCount(0);
+  expect(await page.locator('iframe').count()).toBe(0);
+  const input = page.getByLabel('Choose a playtest file');
+  await input.setInputFiles({
+    name: 'valid.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(`\uFEFF${JSON.stringify(original)}`),
+  });
+  await expect(page.locator('[data-choice]').first()).toBeVisible();
+  await choice(page, 'Hear what');
+  const next = view(source).choices.find((item) => item.text.includes('Hear what'));
+  if (!next) throw new Error('The continuation choice is missing.');
+  act(source, { choice: next.id });
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'New game', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Lab tools', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Choose another file' }).click();
+  await expect(page.getByText(/Original file: .*SHA-256:/)).toBeVisible();
+  await page
+    .getByLabel('Choose a playtest file')
+    .setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{}') });
+  await expect(page.getByRole('status')).toContainText('could not be replayed');
+  await page.getByLabel('Choose a playtest file').dispatchEvent('cancel');
+  await expect(page.getByRole('status')).toContainText('canceled');
+  await page.evaluate(() => {
+    const read = File.prototype.arrayBuffer;
+    File.prototype.arrayBuffer = function () {
+      if (this.name !== 'slow.json') return read.call(this);
+      return new Promise<ArrayBuffer>((resolve) => {
+        Object.assign(window, { releaseSlowFile: async () => resolve(await read.call(this)) });
+      });
+    };
+  });
+  await page.getByLabel('Choose a playtest file').setInputFiles({
+    name: 'slow.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(original)),
+  });
+  await expect(page.getByRole('status')).toContainText('Checking');
+  await page.getByRole('button', { name: 'Resume opened meeting' }).click();
+  await page.evaluate(async () => {
+    await (window as Window & { releaseSlowFile?: () => Promise<void> }).releaseSlowFile?.();
+  });
+  await expect(page.locator('main h1')).toHaveText(view(source).title);
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  const downloadEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export playtest', exact: true }).click();
+  const download = await downloadEvent;
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  const continued = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  expect(replayRun(continued)).toEqual(source);
+  await page.getByRole('button', { name: 'Choose another file' }).click();
+  await page.getByLabel('Choose a playtest file').setInputFiles({
+    name: 'slow.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(original)),
+  });
+  await page.getByRole('button', { name: 'Close file', exact: true }).click();
+  await page.evaluate(async () => {
+    await (window as Window & { releaseSlowFile?: () => Promise<void> }).releaseSlowFile?.();
+  });
+  await expect(page.getByRole('heading', { name: 'Open a His Word file' })).toBeVisible();
+  await expect(page.locator('[data-choice]')).toHaveCount(0);
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
+  expect(await page.evaluate(() => (window as Window & { nativeTrace?: string[] }).nativeTrace)).toEqual([]);
+  expect(
+    await page.evaluate(() => [
+      localStorage.getItem('his-word-save-v1'),
+      localStorage.getItem('his-word-notice-v1'),
+    ]),
+  ).toEqual(['occupied-native-meeting', 'occupied-native-notice']);
+
+  // Ordinary startup reads native storage, and ordinary import writes the save.
+  await page.goto('/?lab=1');
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await page.getByRole('button', { name: 'Lab tools', exact: true }).click();
+  await page.getByLabel('Import a playtest export').setInputFiles({
+    name: 'continued.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(continued)),
+  });
+  await expect(page.getByRole('status')).toContainText('Replay verified');
+  expect(await page.evaluate(() => (window as Window & { nativeTrace?: string[] }).nativeTrace)).toContain(
+    'write:his-word-save-v1',
+  );
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('his-word-save-v1') ?? 'null'))).toEqual(
+    continued,
+  );
+});
+
+// The real host must leave the SDK's async pagehide snapshot alive. Synthetic
+// receiver replies are test receipts only; every linked piece uses its exact id.
+test('pagehide captures the complete changed file meeting with the real SDK', async ({ page, baseURL }) => {
+  const { gunzipSync } = await import('node:zlib');
+  const { act, createGame, exportRun, view } = await import('../../src/game');
+  const origin = 'https://word-file-test.invalid';
+  type Piece = { upload: string; index: number; total: number; text: string };
+  const runs = new Map<string, Map<number, Piece>>();
+  const snapshots = () =>
+    [...runs.values()].flatMap((pieces) => {
+      const ordered = [...pieces.values()].sort((a, b) => a.index - b.index);
+      if (!ordered[0] || ordered.length !== ordered[0].total) return [];
+      return [JSON.parse(ordered.map((piece) => piece.text).join(''))];
+    });
+  // Serve the actual built Word bundle on a synthetic HTTPS test origin so the
+  // public SDK is eligible. All other requests are handled here or aborted.
+  await page.route('**/*', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.origin === origin) {
+      const response = await page.request.get(new URL(url.pathname + url.search, baseURL).href);
+      await route.fulfill({ response });
+      return;
+    }
+    if (url.href === 'https://human.adamwhite.work/lab/api/linked') {
+      const headers = {
+        'access-control-allow-origin': origin,
+        'access-control-allow-methods': 'POST, OPTIONS',
+        'access-control-allow-headers': 'content-type',
+      };
+      if (request.method() === 'OPTIONS') {
+        await route.fulfill({ status: 204, headers });
+        return;
+      }
+      expect(request.method()).toBe('POST');
+      const body = request.postDataBuffer();
+      if (!body) throw new Error('The linked test request has no compressed body.');
+      const envelope = JSON.parse(gunzipSync(body).toString('utf8'));
+      expect(envelope.v).toBe(2);
+      expect(envelope.id).toMatch(/^[a-f0-9]{32}$/);
+      expect(envelope.game).toBe('word');
+      expect(envelope.runSource).toBe('agent');
+      if (envelope.kind === 'run') {
+        const piece = envelope.data as Piece;
+        expect(piece.upload).toMatch(/^[a-f0-9]{32}$/);
+        const pieces = runs.get(piece.upload) ?? new Map<number, Piece>();
+        pieces.set(piece.index, piece);
+        runs.set(piece.upload, pieces);
+      }
+      await route.fulfill({
+        status: 200,
+        headers,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, id: envelope.id }),
+      });
+      return;
+    }
+    await route.abort();
+  });
+  await page.addInitScript(() => {
+    // Fresh test-context fixture, never read from or copied out of an owner profile.
+    localStorage.setItem('hf-lab-player', '11111111111111111111111111111111');
+    sessionStorage.setItem('hf-lab-session:word', `22222222222222222222222222222222:${Date.now()}`);
+    sessionStorage.setItem('hf-lab-run:word', '33333333333333333333333333333333');
+  });
+  const source = createGame(42);
+  const first = view(source).choices.find((item) => item.text.includes('Put the notebook'));
+  if (!first) throw new Error('The opening choice is missing.');
+  act(source, { choice: first.id });
+  const initial = exportRun(source);
+  await page.goto(`${origin}/?file=1&labRunSource=agent`);
+  await expect(page.getByRole('checkbox', { name: 'Record my play for the lab' })).toBeChecked();
+  await page.getByLabel('Choose a playtest file').setInputFiles({
+    name: 'meeting.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(initial)),
+  });
+  await expect.poll(() => snapshots()).toContainEqual(initial);
+  await choice(page, 'Hear what');
+  const next = view(source).choices.find((item) => item.text.includes('Hear what'));
+  if (!next) throw new Error('The continuation choice is missing.');
+  act(source, { choice: next.id });
+  const final = exportRun(source);
+  expect(final).not.toEqual(initial);
+  expect(snapshots()).not.toContainEqual(final);
+  // Dispatch through both real listeners, including the host listener after SDK.
+  // This isolates pagehide before the SDK's sixty-second periodic snapshot.
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false })));
+  await expect.poll(() => snapshots()).toContainEqual(final);
+});

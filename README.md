@@ -97,6 +97,45 @@ can leave separate identities. Fictional-person continuity is separate and is
 not guaranteed by recording linkage; this game does not import continuing people.
 See the [recording and privacy notice](https://human.adamwhite.work/lab/privacy/).
 
+### Open a file without replacing your browser save
+
+Open `?file=1` and choose a complete current `word-5` / HF 4.0.0 export.
+This route opens the chooser before reading your saved meeting or creating a
+new one. It does not read or write the Word save or notice keys. The opened
+meeting and its complete five-person state stay in memory. Continue playing,
+then use **Menu → Export playtest** to download the current complete run.
+That download can be imported through ordinary Lab tools or opened in file mode.
+Download before closing: reloading or closing the tab loses undownloaded play.
+**Choose another file** keeps the last accepted meeting until a new file passes
+full replay. Canceling or rejecting a file keeps that meeting available.
+**Close file** returns to the chooser. New game is available on the ordinary route.
+
+Files must be valid UTF-8 JSON and no larger than 16 MiB. One leading UTF-8 BOM
+is accepted. The original bytes and their SHA-256 stay in memory beside the
+validated complete export. The chooser shows that original byte count and hash
+when you return to it. A continued export contains the current state; its JSON
+formatting can differ from the original file. No people, logs or provenance are
+trimmed to meet the size limit.
+
+File mode uses client 0.4.15 preserving initialization. It reuses an existing
+usable local recording identity and leaves stored identity and preferences
+unchanged during initialization. Missing identity, incompatible session or an
+identity mismatch blocks recording and is shown explicitly. File mode never
+creates or copies a player identity as a fallback. Recording respects the
+existing privacy signal and preferences. The switch remains disabled while
+identity/session preservation is blocked. An explicit switch change, where
+available, changes the recording preference as on ordinary play. There is no
+temporary tab-only recording control. This informational notice does not claim
+the ordinary notice key. The existing feedback buttons explicitly submit notes;
+selecting them is not a local preview.
+
+An agent can explicitly open `?file=1&labRunSource=agent`. The public SDK marker
+labels newly captured linked records; it does not change imported authorship,
+turn recording on, change prior queued records or prove delivery. File mode
+makes no fictional-person Shelf request. Pending recording is retained until
+the SDK receives its exact stored receipt. Host source tests do not establish
+owner-profile admission, a production receipt, panel readiness or acceptance.
+
 ## Develop
 
 Use Node **26.12.0** and pnpm **12.14.0**.
