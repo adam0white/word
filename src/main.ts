@@ -1,4 +1,4 @@
-import { createLab, PRIVACY_URL, sendFeedbackLabel } from '@adam0white/lab-client';
+import { createLab, PRIVACY_URL } from '@adam0white/lab-client';
 import { act, createGame, exportRun, type GameState, hashState, replayRun, view } from './game';
 import { type AcceptedNativeFile, NativeFileSelection } from './native-file';
 import './style.css';
@@ -46,7 +46,6 @@ if (!fileMode) {
 }
 type Surface = 'play' | 'menu' | 'notebook' | 'feedback' | 'new' | 'notice' | 'lab' | 'file';
 let surface: Surface = fileMode ? 'file' : read(noticeKey) ? 'play' : 'notice';
-let feedbackBusy = false;
 function trackMeeting(): void {
   // Replacement intentionally ends the old file's future snapshots. It does not
   // promise a final recording receipt; the player can download before replacing.
@@ -438,37 +437,19 @@ function render(focus = true): void {
   } else if (surface === 'feedback') {
     leaf.append(
       heading('Leave a note'),
-      paragraph('Choose a note to send to the lab. With recording off, it is sent without your linked play.'),
+      paragraph(
+        'Choose a note to start a draft. Nothing is sent until you review it and press Submit. With recording off, a submitted note goes without your linked play.',
+      ),
     );
-    const send = async (label: 'stopping' | 'confused') => {
-      if (feedbackBusy) return;
-      feedbackBusy = true;
-      status = 'Sending your note…';
-      render(false);
-      try {
-        await sendFeedbackLabel(lab, label);
-        status = 'Your note reached the lab. Thank you.';
-      } catch {
-        status = 'Your note did not reach the lab. Please try again.';
-      } finally {
-        feedbackBusy = false;
-        render(false);
-      }
+    const draft = (text: string) => {
+      lab.openSendDialog({
+        title: 'Leave a note',
+        note: text,
+        getRun: () => (state ? exportRun(state) : null),
+      });
     };
-    for (const [label, text] of [
-      ['stopping', "I'm stopping"],
-      ['confused', "I'm confused"],
-    ] as const) {
-      const option = button(
-        text,
-        () => {
-          void send(label);
-        },
-        'choice',
-      );
-      option.disabled = feedbackBusy;
-      leaf.append(option);
-    }
+    for (const text of ["I'm stopping", "I'm confused"])
+      leaf.append(button(text, () => draft(text), 'choice'));
     leaf.append(button('Return to the table', () => change('play'), 'text-button'));
   } else if (surface === 'lab' && !fileMode) {
     leaf.append(
