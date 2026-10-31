@@ -53,6 +53,7 @@ A conversation takes two minutes. You can ask again after something changes.
 
 === offer ===
 Writing an agreement takes two minutes. Each signature takes one more minute.
+An agreement’s terms can change after you ask people. Read the terms before writing. If you have not asked someone, their acceptance is unknown.
 For a trial lease, ask Osman about rent before writing the agreement. After a conversation changes the terms, write a new agreement for everyone to sign.
 {flag("caught"):Everyone now asks for a ₺40 deposit, because your private word proved false.}
 * [Morning work. Rent an outside cart space. Full shop lease. (2 minutes){preview("morning")}]

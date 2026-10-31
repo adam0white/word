@@ -580,7 +580,7 @@ export function view(s: GameState): {
               `${signingMinutes} ${signingMinutes === 1 ? 'minute' : 'minutes'} needed for the remaining signatures${deliveryWait ? ' including the delivery wait' : ''}. ${s.remaining} ${s.remaining === 1 ? 'minute remains' : 'minutes remain'}.`,
             ]
           : []),
-      s.note,
+      displayNote(s),
       ...(s.page === 'signing' && s.proposal && !s.note.includes(s.proposal.terms)
         ? [`${s.proposal.terms} Total from your fund: ₺${s.proposal.cost}.`]
         : []),
@@ -598,6 +598,13 @@ export function view(s: GameState): {
   };
 }
 
+/** Ferda's stated need is a fixed host line, stored unchanged in `note` and `log` so every saved
+ * run replays. Once the letter is read the screen says what that line is, and invents no new speech. */
+function displayNote(s: GameState): string {
+  return s.speaker === NAMES.ferda && s.letter && s.note.startsWith(needs.ferda)
+    ? `${s.note} This is her standing need, worded as before the letter. It is not a reply to the letter.`
+    : s.note;
+}
 function away(s: GameState) {
   return s.remaining <= 18 && s.remaining > 10;
 }
@@ -752,6 +759,25 @@ function agreementDraft(
   };
 }
 
+/** Which questions the printed terms follow. The same option can print different terms after you
+ * ask Halil or Rıza; this says why, without saying whether anyone not yet asked would accept. */
+function termsSource(s: GameState, kind: string, smaller: boolean): string {
+  const part = (who: Who, asked: string, unasked: string) =>
+    `${NAMES[who]} ${s.asked.includes(who) ? `asked: ${asked}` : `not asked: ${unasked}`}.`;
+  const parts =
+    kind === 'late'
+      ? [
+          part('halil', 'paid break', 'no paid break'),
+          part('riza', 'cart home at four', 'cart inside overnight'),
+        ]
+      : kind === 'morning' && smaller
+        ? [part('riza', 'his own yard', 'rented outside space')]
+        : [];
+  if (!parts.length) return '';
+  const open = parts.some((p) => p.includes('not asked'));
+  return ` Terms follow your questions. ${parts.join(' ')}${open ? ' Asking can change them.' : ''}`;
+}
+
 function agreementPreview(s: GameState, key: string): string {
   const kind = key.startsWith('morning') ? 'morning' : key.startsWith('late') ? 'late' : 'shared';
   const { proposal, blocked } = agreementDraft(s, kind, key.endsWith('_small'));
@@ -772,7 +798,7 @@ function agreementPreview(s: GameState, key: string): string {
     s.caught && kind === 'shared'
       ? proposal.terms.replace('You pay nothing.', 'The proposed fee waivers would cost nothing.')
       : proposal.terms;
-  return ` ${terms} Total from your fund: ₺${proposal.cost}. Writing takes 2 minutes, even if someone then refuses. ${[blocked, ...conditions].filter(Boolean).join(' ')}`;
+  return ` ${terms}${termsSource(s, kind, key.endsWith('_small'))} Total from your fund: ₺${proposal.cost}. Writing takes 2 minutes, even if someone then refuses. ${[blocked, ...conditions].filter(Boolean).join(' ')}`;
 }
 
 function propose(s: GameState, kind: Proposal['kind'], smaller = false) {

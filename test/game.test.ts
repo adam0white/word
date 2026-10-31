@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { replay } from '@adam0white/human-framework';
 import { describe, expect, it } from 'vitest';
 import { act, createGame, exportRun, hashState, reading, replayRun, view } from '../src/game';
@@ -428,6 +430,52 @@ it('includes a delivery round that will begin before Rıza can finish signing', 
   choose(s, 'Rent an outside');
   expect(s.remaining).toBe(20);
   expect(view(s).prose.join(' ')).toContain('11 minutes needed');
+});
+
+describe('clarity: why terms and replies change', () => {
+  it('names which question shaped the late-work terms, under an unchanged title', () => {
+    const s = start();
+    choose(s, 'Fetch Nuri');
+    choose(s, 'Write an agreement');
+    const late = () => view(s).choices.find((c) => c.text.includes('smaller late service'))?.text ?? '';
+    const first = late();
+    expect(first).toContain('Halil not asked: no paid break');
+    expect(first).toContain('Rıza not asked: cart inside overnight');
+    choose(s, 'Return to the table');
+    choose(s, 'Hear what');
+    choose(s, 'Ask Halil');
+    choose(s, 'Write an agreement');
+    const second = late();
+    expect(second).toContain('Halil asked: paid break');
+    expect(second).toContain('Rıza not asked: cart inside overnight');
+    expect(second).toContain('with a paid break');
+    expectReplay(s);
+  });
+  it('labels Ferda’s fixed line after the letter without changing what is stored', () => {
+    const s = start();
+    choose(s, 'Hear what');
+    choose(s, 'Ask Ferda');
+    const before = view(s).prose.join(' ');
+    expect(before).toContain('The letter may tell us whether late work pays');
+    expect(before).not.toContain('not a reply to the letter');
+    choose(s, 'Fetch Nuri');
+    choose(s, 'Hear what');
+    choose(s, 'Ask Ferda');
+    expect(s.note).toContain('The letter may tell us whether late work pays');
+    expect(s.log.at(-1)?.text).toContain(s.note);
+    expect(view(s).prose.join(' ')).toContain('It is not a reply to the letter');
+    expectReplay(s);
+  });
+  it('replays a word-5 export made by 349 after the letter and Ferda, with its stored bytes intact', () => {
+    const raw = gunzipSync(
+      readFileSync(new URL('./fixtures/base349-fetchletter-askferda.json.gz', import.meta.url)),
+    ).toString();
+    const original = JSON.parse(raw);
+    const s = replayRun(JSON.parse(raw));
+    expect(JSON.stringify(exportRun(s))).toBe(JSON.stringify(original));
+    expect(s.note).toContain('The letter may tell us whether late work pays');
+    expect(view(s).prose.join(' ')).toContain('It is not a reply to the letter');
+  });
 });
 
 describe('agreement previews before writing', () => {

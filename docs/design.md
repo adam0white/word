@@ -95,9 +95,19 @@ Before writing an agreement, the preview states what is known and what is not.
 | Rıza’s delivery round, from 18 to 10 minutes left            |                                                          |
 | Every condition learned by asking, and every earlier refusal |                                                          |
 
+## Iteration 5 clarity (2026-10-31, light playtest)
+
+Mechanism, reproduced in `test/game.test.ts`: late-work and Rıza-yard terms are built from the questions already asked (`agreementDraft`). The same option title therefore prints different terms after you ask Halil or Rıza. Each such option now ends its terms with “Terms follow your questions”, naming which of Halil and Rıza you have asked, and the agreement page says once, in general terms, that terms can change after you ask people. It names no unasked requirement. This reveals no unasked acceptance and changes no rule, clock, cash, consent or signature.
+
+Ferda’s “The letter may tell us whether late work pays” is a fixed host line, not saved speech, and it is stored unchanged in the run’s `note` and `log`. Changing stored text would make every word-5 export made at 349 fail replay, whose check compares the archive, hash and whole state. So the correction is presentation only: after the letter the screen adds “This is her standing need, worded as before the letter. It is not a reply to the letter.” The stored line, log, state and hash are untouched, and no new Ferda speech is invented. `test/fixtures/base349-fetchletter-askferda.json.gz` is a full export produced by the unmodified 349 game (fetch the letter, ask Ferda); `test/game.test.ts` replays it strictly and compares the re-export byte for byte.
+
+This is a wording change on a five-person panel cohort, not evidence about all players. It does not make the game longer, harder or more varied.
+
 ## Deferred
 
 - 2026-11-03: owner acceptance after lab round 1 and retest. Coordinator owns panel scheduling and central site deployment.
 - 2026-11-15: audience-tuned retelling and rehearsal confidence are HF 4.1 work; HF 4.0 does not deliver them. Adopt them after that release and the named headless control. Request in V3-COORDINATION.md.
 - 2026-11-03: consider continuous event time after reading-speed feedback. First slice advances the appointment through costly choices.
 - 2026-11-15: cross-game actor continuation needs a receiving contract for this tenancy and work arrangement. First slice is explicitly fresh, not an imported continuation.
+- 2026-11-03: unresolved clarity or reproduction, not changed by the 2026-10-31 candidate. Sources are the light-2026-10-30 Word reports at `docs/lab/reviews/light-2026-10-30/word/<first>/report.md` in the Human Framework packet: F2441 Mei, show what a rewrite plus signatures costs against minutes left (`mei`); F2446 Diego, shorter agreement rows (`diego`; the 2026-10-31 terms note adds length, so recheck); F2447 Diego, desktop controls run below one 800 px screen (`diego`; not reproduced here); F2450 Mina, name the private-word choice before opening it (`mina`).
+- 2026-11-10: preferences needing an owner decision on length, difficulty or variety; none was changed. F2431–F2435 return rows (all five); F2436 Maya, longer runs (`maya`); F2437 Maya, earlier reactions to a private word on every path (`maya`); F2439 Mei, harder or different meetings (`mei`); F2442 Samir, a cost on the honest route (`samir`); F2443 Samir, earlier private choices (`samir`); F2444 Samir, more questions than needs (`samir`); F2445 Diego, risk before the agreement stage (`diego`); F2449 Mina, endings that differ more by road (`mina`). Short model-driven sessions are not proof of human reading speed.
