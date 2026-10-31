@@ -59,6 +59,9 @@ beliefs, changes in trust in a source, and relationships.
 - The supplier’s letter reaches Ferda as an observation that she read, with its
   source and confidence. A private word reaches Halil or Rıza as an observation
   told by the nephew. No belief is written into a person after the run starts.
+- Ferda’s stated need is a fixed host line stored unchanged in the run. After the
+  letter the screen labels it as her standing need, not a reply to the letter. The
+  label is presentation only, so word-5 exports made at 349 still replay.
 - A comparison between Halil and Rıza is a contradiction input that names the
   other man as reporter. A confession is a contradiction with no reporter,
   because the game does not know who first passes it on. Discovered deceit and

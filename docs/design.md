@@ -97,9 +97,9 @@ Before writing an agreement, the preview states what is known and what is not.
 
 ## Iteration 5 clarity (2026-10-31, light playtest)
 
-Mechanism, reproduced in `test/game.test.ts`: late-work and Rıza-yard terms are built from the questions already asked (`agreementDraft`). The same option title therefore prints different terms after you ask Halil or Rıza. Each such option now ends its terms with “Terms follow your questions”, naming which asks it reflects, and the agreement page says so once. This reveals no unasked acceptance and changes no rule, clock, cash, consent or signature.
+Mechanism, reproduced in `test/game.test.ts`: late-work and Rıza-yard terms are built from the questions already asked (`agreementDraft`). The same option title therefore prints different terms after you ask Halil or Rıza. Each such option now ends its terms with “Terms follow your questions”, naming which of Halil and Rıza you have asked, and the agreement page says once, in general terms, that terms can change after you ask people. It names no unasked requirement. This reveals no unasked acceptance and changes no rule, clock, cash, consent or signature.
 
-Ferda’s “The letter may tell us whether late work pays” is a fixed host line, not saved speech. It was repeated when she was asked again after the letter. After the letter her line omits that clause; the Human Framework claim she speaks is unchanged, and the notebook keeps the earlier entry as heard at that time.
+Ferda’s “The letter may tell us whether late work pays” is a fixed host line, not saved speech, and it is stored unchanged in the run’s `note` and `log`. Changing stored text would make every word-5 export made at 349 fail replay, whose check compares the archive, hash and whole state. So the correction is presentation only: after the letter the screen adds “This is her standing need, worded as before the letter. It is not a reply to the letter.” The stored line, log, state and hash are untouched, and no new Ferda speech is invented. `test/fixtures/base349-fetchletter-askferda.json.gz` is a full export produced by the unmodified 349 game (fetch the letter, ask Ferda); `test/game.test.ts` replays it strictly and compares the re-export byte for byte.
 
 This is a wording change on a five-person panel cohort, not evidence about all players. It does not make the game longer, harder or more varied.
 

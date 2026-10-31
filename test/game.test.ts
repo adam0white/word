@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { replay } from '@adam0white/human-framework';
 import { describe, expect, it } from 'vitest';
 import { act, createGame, exportRun, hashState, reading, replayRun, view } from '../src/game';
@@ -449,17 +451,30 @@ describe('clarity: why terms and replies change', () => {
     expect(second).toContain('with a paid break');
     expectReplay(s);
   });
-  it('does not repeat Ferda’s pre-letter hope as a current line once the letter is read', () => {
+  it('labels Ferda’s fixed line after the letter without changing what is stored', () => {
     const s = start();
     choose(s, 'Hear what');
     choose(s, 'Ask Ferda');
-    expect(s.note).toContain('The letter may tell us whether late work pays');
+    const before = view(s).prose.join(' ');
+    expect(before).toContain('The letter may tell us whether late work pays');
+    expect(before).not.toContain('not a reply to the letter');
     choose(s, 'Fetch Nuri');
     choose(s, 'Hear what');
     choose(s, 'Ask Ferda');
-    expect(s.note).not.toContain('may tell us');
-    expect(s.note).toContain('smaller service on a trial lease');
+    expect(s.note).toContain('The letter may tell us whether late work pays');
+    expect(s.log.at(-1)?.text).toContain(s.note);
+    expect(view(s).prose.join(' ')).toContain('It is not a reply to the letter');
     expectReplay(s);
+  });
+  it('replays a word-5 export made by 349 after the letter and Ferda, with its stored bytes intact', () => {
+    const raw = gunzipSync(
+      readFileSync(new URL('./fixtures/base349-fetchletter-askferda.json.gz', import.meta.url)),
+    ).toString();
+    const original = JSON.parse(raw);
+    const s = replayRun(JSON.parse(raw));
+    expect(JSON.stringify(exportRun(s))).toBe(JSON.stringify(original));
+    expect(s.note).toContain('The letter may tell us whether late work pays');
+    expect(view(s).prose.join(' ')).toContain('It is not a reply to the letter');
   });
 });
 

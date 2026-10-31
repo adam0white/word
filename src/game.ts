@@ -580,7 +580,7 @@ export function view(s: GameState): {
               `${signingMinutes} ${signingMinutes === 1 ? 'minute' : 'minutes'} needed for the remaining signatures${deliveryWait ? ' including the delivery wait' : ''}. ${s.remaining} ${s.remaining === 1 ? 'minute remains' : 'minutes remain'}.`,
             ]
           : []),
-      s.note,
+      displayNote(s),
       ...(s.page === 'signing' && s.proposal && !s.note.includes(s.proposal.terms)
         ? [`${s.proposal.terms} Total from your fund: ₺${s.proposal.cost}.`]
         : []),
@@ -598,6 +598,13 @@ export function view(s: GameState): {
   };
 }
 
+/** Ferda's stated need is a fixed host line, stored unchanged in `note` and `log` so every saved
+ * run replays. Once the letter is read the screen says what that line is, and invents no new speech. */
+function displayNote(s: GameState): string {
+  return s.speaker === NAMES.ferda && s.letter && s.note.startsWith(needs.ferda)
+    ? `${s.note} This is her standing need, worded as before the letter. It is not a reply to the letter.`
+    : s.note;
+}
 function away(s: GameState) {
   return s.remaining <= 18 && s.remaining > 10;
 }
@@ -623,10 +630,6 @@ const needs: Record<Who, string> = {
   ferda:
     '“I cannot run the whole shop. I would choose a smaller service on a trial lease. The letter may tell us whether late work pays.”',
 };
-/** Ferda's stated need without the hope that the letter would settle late work. It is a fixed host
- * line, not remembered speech, so it stops saying "may tell us" once the letter has been read. */
-const needsFerdaAfterLetter =
-  '“I cannot run the whole shop. I would choose a smaller service on a trial lease.”';
 /** What a heard claim sounds like in the speaker's mouth. HF chose the claim from the speaker's
  * current beliefs; the host only words it. */
 function phrase(claim: PerceptClaim): string {
@@ -663,7 +666,7 @@ function talk(s: GameState, who: Who) {
   ]);
   s.speaker = NAMES[who];
   s.speech = heard.map(phrase).filter(Boolean).join(' ');
-  s.note = `${who === 'ferda' && s.letter ? needsFerdaAfterLetter : needs[who]}${isWary(reading(s, who)) ? ' “This time I will rely on what is written, not your word.”' : ''}`;
+  s.note = `${needs[who]}${isWary(reading(s, who)) ? ' “This time I will rely on what is written, not your word.”' : ''}`;
   if (!s.asked.includes(who)) s.asked.push(who);
   record(s, `${NAMES[who]}: ${s.speech} ${s.note}`);
 }
