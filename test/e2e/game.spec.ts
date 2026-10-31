@@ -176,6 +176,7 @@ test('draft choices show terms and costs before writing uses time', async ({ pag
   await ask(page, 'Halil');
   await choice(page, 'Write an agreement');
   await expect(late).toContainText('with a paid break');
+  await expect(late).toContainText('Halil asked: paid break');
   await late.click();
   await expect(page.locator('main')).toContainText('with a paid break');
   await expect(page.locator('.eyebrow')).toContainText('14 minutes');

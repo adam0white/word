@@ -430,6 +430,39 @@ it('includes a delivery round that will begin before Rıza can finish signing', 
   expect(view(s).prose.join(' ')).toContain('11 minutes needed');
 });
 
+describe('clarity: why terms and replies change', () => {
+  it('names which question shaped the late-work terms, under an unchanged title', () => {
+    const s = start();
+    choose(s, 'Fetch Nuri');
+    choose(s, 'Write an agreement');
+    const late = () => view(s).choices.find((c) => c.text.includes('smaller late service'))?.text ?? '';
+    const first = late();
+    expect(first).toContain('Halil not asked: no paid break');
+    expect(first).toContain('Rıza not asked: cart inside overnight');
+    choose(s, 'Return to the table');
+    choose(s, 'Hear what');
+    choose(s, 'Ask Halil');
+    choose(s, 'Write an agreement');
+    const second = late();
+    expect(second).toContain('Halil asked: paid break');
+    expect(second).toContain('Rıza not asked: cart inside overnight');
+    expect(second).toContain('with a paid break');
+    expectReplay(s);
+  });
+  it('does not repeat Ferda’s pre-letter hope as a current line once the letter is read', () => {
+    const s = start();
+    choose(s, 'Hear what');
+    choose(s, 'Ask Ferda');
+    expect(s.note).toContain('The letter may tell us whether late work pays');
+    choose(s, 'Fetch Nuri');
+    choose(s, 'Hear what');
+    choose(s, 'Ask Ferda');
+    expect(s.note).not.toContain('may tell us');
+    expect(s.note).toContain('smaller service on a trial lease');
+    expectReplay(s);
+  });
+});
+
 describe('agreement previews before writing', () => {
   it('shows exact late terms, fund cost and unknown acceptance without spending time', () => {
     const s = start();

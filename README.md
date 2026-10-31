@@ -24,7 +24,9 @@ to choose it. Read the reply and the minutes left before choosing again.
   when both are present. Being caught cancels the unfinished agreement and
   requires a deposit. You can also withdraw the promises openly.
 - **Write an agreement** offers practical arrangements. Writing takes two
-  minutes. Read the terms and your contribution. A refusal tells you what is
+  minutes. Read the terms and your contribution. Terms follow your questions:
+  the same title can print different terms after you ask Halil or Rıza, and each
+  option names which asks it reflects. Anyone not yet asked stays unknown. A refusal tells you what is
   missing. Ask about it, then write a new agreement with the needed concessions.
 - **Ask the next person to sign** takes one minute. All four must sign the same
   agreement. Changing it clears every signature. Rıza’s delivery round can delay
@@ -84,8 +86,9 @@ The client is pinned to **@adam0white/lab-client 0.4.15**, the vendored artifact
 Recording attempts uploads of decisions, run snapshots and event/error logs.
 Use **Record my play for the lab** on first visit or in Menu to change it.
 Browser privacy signals default recording to off. **Feedback** offers
-**I'm stopping** and **I'm confused**; selecting one attempts to send that note.
-With recording off, the note is unlinked. Feedback success requires a stored-note
+**I'm stopping** and **I'm confused**; selecting one opens a draft with that text
+and sends nothing until you choose **Submit**. **Not now** sends nothing.
+With recording off, a submitted note is unlinked. Feedback success requires a stored-note
 receipt; queued automatic records and upload attempts do not prove storage.
 
 His Word registration is in central source commit `5fb4d98`. The live central
