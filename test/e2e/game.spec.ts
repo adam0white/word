@@ -402,3 +402,22 @@ test('pagehide captures the complete changed file meeting with the real SDK', as
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false })));
   await expect.poll(() => snapshots()).toContainEqual(final);
 });
+
+test('a quiet label opens a reviewable draft and sends nothing until Submit', async ({ page }) => {
+  const external: string[] = [];
+  await page.route(/^(?!http:\/\/127\.0\.0\.1:4173)/, (route) => {
+    external.push(`${route.request().method()} ${route.request().url()}`);
+    return route.abort();
+  });
+  await takeSeat(page);
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await page.getByRole('button', { name: 'Feedback', exact: true }).click();
+  await page.getByRole('button', { name: "I'm confused", exact: true }).click();
+  const draft = page.getByRole('dialog');
+  await expect(draft).toBeVisible();
+  await expect(draft.getByRole('textbox', { name: 'A note (optional)' })).toHaveValue(/I'm confused/);
+  await expect(draft.getByRole('button', { name: 'Submit' })).toBeVisible();
+  await draft.getByRole('button', { name: 'Not now' }).click();
+  await expect(draft).toBeHidden();
+  expect(external.filter((request) => request.startsWith('POST'))).toEqual([]);
+});
